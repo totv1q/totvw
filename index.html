@@ -2,36 +2,23 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-
   <script>
     if (location.protocol === 'https:' && !location.hostname.includes('localhost')) {
         location.replace(location.href.replace('https:', 'http:'));
     }
+    // تعريف الدالة $ لضمان عدم توقف الكود الأصلي
+    const $ = id => document.getElementById(id);
   </script>
 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="TOTV+">
-  <meta name="theme-color" content="#000000">
-  <meta name="format-detection" content="telephone=no">
   
-  <meta http-equiv="Content-Security-Policy" content="
-    default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;
-    media-src * blob: data:;
-    img-src * data: blob:;
-  ">
-
-  <link rel="icon" type="image/png" sizes="32x32" href="Icon-32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="Icon-16.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="Icon-180.png">
   <link rel="manifest" href="manifest.json">
-
-  <title>TOTV+</title>
-
+  <link rel="apple-touch-icon" href="Icon-180.png">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
-
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.7/hls.min.js"></script>
 
   <script>
@@ -1103,65 +1090,58 @@ const Player = {
    EVENTS SETUP WITH AUTO-LOAD
    ═════════════════════════════════════════ */
 function setupEvents() {
-  // 1. جلب البيانات المحفوظة فور تشغيل الدالة
+  // استرجاع البيانات المحفوظة فور التشغيل
   const savedU = localStorage.getItem('totv_u');
   const savedP = localStorage.getItem('totv_p');
   
   if (savedU && savedP) {
-    $('uIn').value = savedU;
-    $('pIn').value = savedP;
-    console.log("Auto-filled credentials for TOTV+");
-    // اختياري: يمكنك تفعيل الدخول التلقائي هنا بإضافة Auth.login();
+    if($('uIn')) $('uIn').value = savedU;
+    if($('pIn')) $('pIn').value = savedP;
   }
 
-  // 2. إعداد أزرار التفاعل الأصلية
-  $('pinBtn').onclick=()=>Auth.checkPin();
-  $('pinIn').onkeydown=e=>{if(e.key==='Enter')Auth.checkPin()};
-  
-  // تعديل زر الدخول ليقوم بالحفظ عند الضغط
+  // أحداث زر PIN
+  $('pinBtn').onclick = () => Auth.checkPin();
+  $('pinIn').onkeydown = e => { if(e.key === 'Enter') Auth.checkPin() };
+
+  // زر الدخول مع حفظ البيانات
   $('lBtn').onclick = () => {
-    // حفظ البيانات في المتصفح قبل محاولة الدخول
     localStorage.setItem('totv_u', $('uIn').value);
     localStorage.setItem('totv_p', $('pIn').value);
     Auth.login();
   };
 
-  $('uIn').onkeydown=e=>{if(e.key==='Enter')$('pIn').focus()};
-  $('pIn').onkeydown=e=>{if(e.key==='Enter') {
+  $('uIn').onkeydown = e => { if(e.key === 'Enter') $('pIn').focus() };
+  $('pIn').onkeydown = e => { 
+    if(e.key === 'Enter') {
       localStorage.setItem('totv_u', $('uIn').value);
       localStorage.setItem('totv_p', $('pIn').value);
       Auth.login();
-  }};
+    }
+  };
 
-  // تعديل زر تسجيل الخروج لمسح البيانات المحفوظة
+  // تسجيل الخروج ومسح الذاكرة
   $('logoutBtn').onclick = () => {
     localStorage.removeItem('totv_u');
     localStorage.removeItem('totv_p');
     Auth.logout();
   };
 
-  $('closePBtn').onclick=()=>Player.close();
+  // باقي الأحداث الأصلية (لا تقم بتغييرها)
+  $('closePBtn').onclick = () => Player.close();
+  document.querySelectorAll('.tab').forEach(t =>
+    t.addEventListener('click', () => App.switchTab(t.dataset.t)));
 
-  document.querySelectorAll('.tab').forEach(t=>
-    t.addEventListener('click',()=>App.switchTab(t.dataset.t)));
-
-  window.addEventListener('popstate',()=>{
-    if($('pm').classList.contains('on'))Player.close();
+  window.addEventListener('popstate', () => {
+    if($('pm').classList.contains('on')) Player.close();
   });
   
-  document.addEventListener('keydown',e=>{if(e.key==='Escape')Player.close()});
-
-  /* iOS pull-to-refresh prevention */
+  /* منع السحب للتحديث في iOS */
   let _ty=0;
-  document.addEventListener('touchstart',e=>{_ty=e.touches[0].pageY},{passive:true});
-  document.addEventListener('touchmove',e=>{
-    const ab=document.querySelector('.abody');
-    if(ab&&ab.scrollTop===0&&e.touches[0].pageY>_ty)e.preventDefault();
-  },{passive:false});
-
-  document.addEventListener('contextmenu',e=>{
-    if(e.target.matches('video,.ch-card,.vod-card'))e.preventDefault();
-  });
+  document.addEventListener('touchstart', e => { _ty = e.touches[0].pageY }, {passive:true});
+  document.addEventListener('touchmove', e => {
+    const ab = document.querySelector('.abody');
+    if(ab && ab.scrollTop === 0 && e.touches[0].pageY > _ty) e.preventDefault();
+  }, {passive:false});
 }
 
 /* ═══════════════════════════════════════════

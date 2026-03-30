@@ -9,20 +9,23 @@
 <meta name="apple-mobile-web-app-title" content="TOTV+">
 <meta name="theme-color" content="#000000">
 <meta name="format-detection" content="telephone=no">
-<!--
-  CRITICAL: Do NOT use upgrade-insecure-requests!
-  The IPTV server only works on HTTP. That CSP header forces
-  all requests to HTTPS which breaks the connection.
+<meta name="description" content="TOTV+ Premium Streaming">
+
+<!-- 
+  ██████  CRITICAL: NO upgrade-insecure-requests ██████
+  The IPTV server is HTTP-only. This CSP allows mixed content.
 -->
 <meta http-equiv="Content-Security-Policy" content="
   default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;
-  media-src * blob: data: http:;
+  media-src * blob: data: http: https:;
   img-src * data: blob: http: https:;
-  connect-src * http: https:;
+  connect-src * http: https: ws: wss:;
 ">
 
-<link rel="apple-touch-icon" href="Icon-180.png">
-<link rel="manifest" href="manifest.json">
+<!-- Inline PWA icon as base64 SVG to avoid 404 -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%23141414'/%3E%3Ctext x='90' y='105' font-family='Arial' font-weight='900' font-size='42' fill='%23E50914' text-anchor='middle'%3ETO%3C/text%3E%3Ctext x='90' y='145' font-family='Arial' font-weight='900' font-size='28' fill='%23fff' text-anchor='middle'%3ETV+%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%23141414'/%3E%3Ctext x='90' y='105' font-family='Arial' font-weight='900' font-size='42' fill='%23E50914' text-anchor='middle'%3ETO%3C/text%3E%3Ctext x='90' y='145' font-family='Arial' font-weight='900' font-size='28' fill='%23fff' text-anchor='middle'%3ETV+%3C/text%3E%3C/svg%3E">
+
 <title>TOTV+</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
@@ -33,7 +36,7 @@
 :root{
   --accent:#E50914;--accent-d:#B20710;--accent-l:#FF1926;
   --gold:#C6A84A;--gold-l:#E8D48B;
-  --bg:#141414;--s1:#181818;--s2:#222;--s3:#2a2a2a;--s4:#333;
+  --bg:#141414;--s1:#181818;--s2:#222;--s3:#2a2a2a;
   --glass:rgba(255,255,255,.06);--gb:rgba(255,255,255,.1);
   --txt:#fff;--txt-2:#e5e5e5;--dim:#8c8c8c;--dimmer:#555;
   --r:8px;--r2:12px;--r3:20px;
@@ -42,10 +45,15 @@
 }
 html{-webkit-text-size-adjust:100%;height:100%;overflow:hidden}
 body{
-  font-family:'Tajawal',sans-serif;background:var(--bg);color:var(--txt);
+  font-family:'Tajawal','Segoe UI',sans-serif;background:var(--bg);color:var(--txt);
   overflow:hidden;height:100%;position:fixed;width:100%;
   -webkit-font-smoothing:antialiased;overscroll-behavior:none;
 }
+
+/* ═══ INLINE LOGO SVG ═══ */
+.app-icon{width:32px;height:32px;flex-shrink:0}
+.app-icon-lg{width:64px;height:64px}
+.app-icon-splash{width:100px;height:100px}
 
 /* ═══ SPLASH ═══ */
 #splash{
@@ -54,7 +62,6 @@ body{
   transition:opacity .6s,visibility .6s;
 }
 #splash.hide{opacity:0;visibility:hidden;pointer-events:none}
-.sp-logo{width:100px;animation:spPulse 2s ease-in-out infinite}
 @keyframes spPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.05);opacity:.85}}
 .sp-bar-wrap{width:140px;height:3px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
 .sp-bar{width:0;height:100%;background:var(--accent);border-radius:3px;animation:spLoad 1.5s ease forwards}
@@ -79,10 +86,9 @@ body{
 }
 @keyframes cardUp{from{opacity:0;transform:translateY(28px) scale(.97)}to{opacity:1;transform:none}}
 .lk-brand{text-align:center;margin-bottom:30px}
-.lk-brand img{width:60px;height:60px;border-radius:14px;margin-bottom:12px}
+.lk-brand svg{margin:0 auto 12px;display:block}
 .lk-brand h1{font-size:1.6rem;font-weight:900;letter-spacing:3px;color:#fff}
 .lk-brand p{font-size:.82rem;color:var(--dim);margin-top:5px}
-
 .lk-field{position:relative;margin-bottom:14px}
 .lk-field input{
   width:100%;background:var(--s3);border:1px solid rgba(255,255,255,.1);
@@ -93,7 +99,6 @@ body{
 .lk-field input:focus{border-color:var(--accent);background:rgba(42,42,42,.9)}
 .lk-field input::placeholder{color:var(--dimmer)}
 .lk-field .fi{position:absolute;top:50%;right:14px;transform:translateY(-50%);font-size:1rem;pointer-events:none;opacity:.45}
-
 .lk-btn{
   width:100%;background:var(--accent);color:#fff;border:none;border-radius:var(--r);
   padding:14px;font-size:1rem;font-weight:700;font-family:'Tajawal',sans-serif;
@@ -101,7 +106,6 @@ body{
 }
 .lk-btn:active{background:var(--accent-d);transform:scale(.98)}
 .lk-btn:disabled{opacity:.5;cursor:wait}
-
 .lk-err{
   background:rgba(229,9,20,.1);border:1px solid rgba(229,9,20,.25);
   border-radius:var(--r);padding:11px 14px;font-size:.82rem;color:var(--accent-l);
@@ -109,27 +113,22 @@ body{
 }
 .lk-err.on{display:block}
 @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
-
 .proto-warn{
   background:rgba(229,9,20,.08);border:1px solid rgba(229,9,20,.2);
   border-radius:var(--r);padding:12px 14px;margin-top:16px;
-  font-size:.78rem;color:rgba(255,255,255,.6);line-height:1.7;text-align:center;
-  display:none;
+  font-size:.78rem;color:rgba(255,255,255,.6);line-height:1.7;text-align:center;display:none;
 }
-.proto-warn a{color:var(--accent-l);text-decoration:underline}
+.proto-warn a{color:var(--accent-l);text-decoration:underline;font-weight:700}
 
 /* ═══ APP ═══ */
 #app{display:none;flex-direction:column;height:100vh;height:100svh;position:fixed;inset:0;background:var(--bg)}
 #app.on{display:flex}
-
 .anav{
-  height:54px;background:rgba(20,20,20,.97);
-  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-  padding:0 14px;padding-top:var(--st);
+  background:rgba(20,20,20,.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  padding:10px 14px;padding-top:calc(var(--st) + 10px);
   display:flex;align-items:center;gap:10px;flex-shrink:0;
   border-bottom:1px solid rgba(255,255,255,.04);z-index:50;
 }
-.anav-logo{width:28px;height:28px;border-radius:7px;object-fit:cover}
 .anav-title{font-size:1.15rem;font-weight:900;letter-spacing:2px;color:var(--accent)}
 .anav-sp{flex:1}
 .anav-user{font-size:.72rem;color:var(--dim);display:flex;align-items:center;gap:5px}
@@ -140,7 +139,6 @@ body{
   color:var(--dim);font-size:.72rem;padding:5px 12px;cursor:pointer;font-family:'Tajawal',sans-serif;transition:all .2s;
 }
 .out-btn:active{color:var(--accent);border-color:var(--accent)}
-
 .tabs{display:flex;gap:0;background:rgba(20,20,20,.95);flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.04)}
 .tab{
   flex:1;background:transparent;border:none;border-bottom:2px solid transparent;
@@ -149,10 +147,8 @@ body{
 }
 .tab.on{color:#fff;border-bottom-color:var(--accent)}
 .tab:active{opacity:.7}
-
 .abody{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
-.view{display:none;padding-bottom:80px}
-.view.on{display:block}
+.view{display:none;padding-bottom:80px}.view.on{display:block}
 
 /* ═══ HERO ═══ */
 .hero{position:relative;width:100%;height:260px;overflow:hidden;margin-bottom:2px}
@@ -168,7 +164,7 @@ body{
 .hero-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.25);transition:all .3s}
 .hero-dot.on{background:#fff;width:16px;border-radius:3px}
 
-/* ═══ SECTIONS ═══ */
+/* ═══ CONTENT ═══ */
 .section{padding:12px 14px 0}
 .section-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .section-title{font-size:1rem;font-weight:700}
@@ -181,7 +177,6 @@ body{
 }
 .section-search input:focus{border-color:rgba(229,9,20,.4)}
 .section-search::before{content:'🔍';position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:.75rem;pointer-events:none}
-
 .tmdb-row{overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:0 14px;margin-bottom:4px}
 .tmdb-row::-webkit-scrollbar{display:none}
 .tmdb-row-inner{display:flex;gap:8px}
@@ -189,7 +184,6 @@ body{
 .tmdb-card img{width:100%;aspect-ratio:2/3;border-radius:var(--r);object-fit:cover;display:block;background:var(--s2)}
 .tmdb-card .tc-title{font-size:.68rem;font-weight:600;margin-top:4px;color:var(--txt-2);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .tmdb-card .tc-year{font-size:.6rem;color:var(--dim)}
-
 .cat-list{display:flex;flex-direction:column;gap:4px;padding:0 14px}
 .cat-row{
   background:var(--s1);border:1px solid rgba(255,255,255,.03);border-radius:var(--r);
@@ -197,14 +191,12 @@ body{
   transition:all .2s;animation:rowIn .3s ease backwards;
 }
 .cat-row:nth-child(1){animation-delay:.02s}.cat-row:nth-child(2){animation-delay:.04s}
-.cat-row:nth-child(3){animation-delay:.06s}.cat-row:nth-child(4){animation-delay:.08s}
-.cat-row:nth-child(n+5){animation-delay:.1s}
+.cat-row:nth-child(3){animation-delay:.06s}.cat-row:nth-child(n+4){animation-delay:.08s}
 @keyframes rowIn{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
 .cat-row:active{background:rgba(229,9,20,.07);border-color:rgba(229,9,20,.15);transform:translateX(-2px)}
 .cr-ico{font-size:1.15rem;flex-shrink:0}
 .cr-name{flex:1;font-size:.88rem;font-weight:600;color:var(--txt-2)}
 .cr-arr{color:var(--dimmer);font-size:.95rem;flex-shrink:0}
-
 .ch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;padding:0 14px}
 .ch-card{
   background:var(--s1);border:1px solid rgba(255,255,255,.03);border-radius:var(--r2);
@@ -214,21 +206,18 @@ body{
 .ch-logo{width:50px;height:50px;border-radius:10px;object-fit:contain;margin:0 auto 8px;background:var(--s3);padding:2px;display:block}
 .ch-name{font-size:.7rem;font-weight:600;line-height:1.3;color:var(--txt-2);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .live-tag{position:absolute;top:5px;left:5px;background:var(--accent);color:#fff;font-size:.52rem;font-weight:800;padding:2px 6px;border-radius:3px}
-
 .vod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:7px;padding:0 14px}
 .vod-card{cursor:pointer;transition:transform .22s;position:relative}
 .vod-card:active{transform:scale(.96)}
 .vod-poster{width:100%;aspect-ratio:2/3;border-radius:var(--r);object-fit:cover;display:block;background:var(--s2)}
 .vod-score{position:absolute;top:5px;right:5px;background:rgba(0,0,0,.8);border:1px solid rgba(255,255,255,.08);border-radius:4px;padding:1px 5px;font-size:.58rem;font-weight:700;color:var(--gold)}
 .vod-name{font-size:.7rem;font-weight:600;margin-top:5px;line-height:1.3;color:var(--txt-2);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-
 .back-btn{
   display:inline-flex;align-items:center;gap:5px;background:transparent;
   border:1px solid rgba(255,255,255,.08);border-radius:var(--r);padding:7px 13px;
   color:var(--dim);font-size:.8rem;cursor:pointer;font-family:'Tajawal',sans-serif;transition:all .2s;margin:12px 14px 4px;
 }
 .back-btn:active{color:var(--accent);border-color:var(--accent)}
-
 .ldr{display:flex;flex-direction:column;align-items:center;gap:12px;padding:55px 20px}
 .ldr-ring{width:36px;height:36px;border:3px solid rgba(229,9,20,.12);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -274,14 +263,12 @@ body{
   padding:11px 28px;font-size:.86rem;font-weight:700;font-family:'Tajawal',sans-serif;cursor:pointer;transition:all .2s;
 }
 .retry-btn:active{transform:scale(.96);background:var(--accent-d)}
-
 .toast{
   position:fixed;bottom:calc(var(--sb) + 24px);left:50%;transform:translateX(-50%) translateY(12px);
   background:var(--s2);border:1px solid rgba(255,255,255,.06);border-radius:var(--r);
   padding:9px 18px;font-size:.8rem;color:var(--txt);z-index:9000;opacity:0;transition:all .22s;pointer-events:none;white-space:nowrap;
 }
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
-
 @media(max-width:480px){.lk-card{padding:30px 22px}.ch-grid{grid-template-columns:repeat(auto-fill,minmax(105px,1fr))}.vod-grid{grid-template-columns:repeat(3,1fr)}.tmdb-card{width:100px}}
 @media(max-width:360px){.ch-grid{grid-template-columns:repeat(3,1fr)}}
 @media(orientation:landscape) and (max-height:500px){.ptop{padding-top:calc(env(safe-area-inset-top,0px)+4px)}.hero{height:180px}}
@@ -289,16 +276,37 @@ body{
 </head>
 <body>
 
+<!-- ═══ INLINE SVG ICON (used everywhere, no external file needed) ═══ -->
+<svg id="appIconSVG" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" style="display:none">
+  <rect width="180" height="180" rx="38" fill="#141414"/>
+  <rect x="4" y="4" width="172" height="172" rx="34" fill="none" stroke="#E50914" stroke-width="3" opacity=".3"/>
+  <text x="90" y="100" font-family="Arial,sans-serif" font-weight="900" font-size="44" fill="#E50914" text-anchor="middle">TO</text>
+  <text x="90" y="142" font-family="Arial,sans-serif" font-weight="900" font-size="30" fill="#ffffff" text-anchor="middle">TV+</text>
+</svg>
+
+<!-- SPLASH -->
 <div id="splash">
-  <img class="sp-logo" src="Icon-180.png" alt="TOTV+" onerror="this.style.display='none'">
+  <svg class="app-icon-splash" viewBox="0 0 180 180" style="animation:spPulse 2s ease-in-out infinite">
+    <use href="#appIconSVG rect"/><use href="#appIconSVG text"/>
+    <rect width="180" height="180" rx="38" fill="#141414"/>
+    <rect x="4" y="4" width="172" height="172" rx="34" fill="none" stroke="#E50914" stroke-width="3" opacity=".3"/>
+    <text x="90" y="100" font-family="Arial,sans-serif" font-weight="900" font-size="44" fill="#E50914" text-anchor="middle">TO</text>
+    <text x="90" y="142" font-family="Arial,sans-serif" font-weight="900" font-size="30" fill="#fff" text-anchor="middle">TV+</text>
+  </svg>
   <div class="sp-bar-wrap"><div class="sp-bar"></div></div>
   <div class="sp-txt">TOTV+</div>
 </div>
 
+<!-- LOCK -->
 <div class="screen" id="lockScreen">
   <div class="lk-card">
     <div class="lk-brand">
-      <img src="Icon-180.png" alt="TOTV+" onerror="this.style.display='none'">
+      <svg width="64" height="64" viewBox="0 0 180 180">
+        <rect width="180" height="180" rx="38" fill="#141414"/>
+        <rect x="4" y="4" width="172" height="172" rx="34" fill="none" stroke="#E50914" stroke-width="3" opacity=".3"/>
+        <text x="90" y="100" font-family="Arial,sans-serif" font-weight="900" font-size="44" fill="#E50914" text-anchor="middle">TO</text>
+        <text x="90" y="142" font-family="Arial,sans-serif" font-weight="900" font-size="30" fill="#fff" text-anchor="middle">TV+</text>
+      </svg>
       <h1>TOTV+</h1>
       <p>أدخل رمز الدخول</p>
     </div>
@@ -308,18 +316,23 @@ body{
         <input type="password" id="pinIn" placeholder="رمز الدخول" maxlength="10" inputmode="numeric" autocomplete="off">
       </div>
       <button class="lk-btn" id="pinBtn">دخول</button>
-      <div class="lk-err" id="pinErr">رمز الدخول غير صحيح</div>
+      <div class="lk-err" id="pinErr"></div>
     </div>
     <div class="proto-warn" id="protoWarn">
-      ⚠️ الصفحة تعمل عبر HTTPS مما يمنع الاتصال بالسيرفر.<br>
-      <a id="httpLink" href="#">اضغط هنا للانتقال إلى نسخة HTTP</a>
+      ⚠️ الصفحة تعمل عبر HTTPS مما يمنع الاتصال بالسيرفر<br>
+      <a id="httpLink" href="#">اضغط هنا للانتقال إلى HTTP</a>
     </div>
   </div>
 </div>
 
+<!-- APP -->
 <div id="app">
   <div class="anav">
-    <img class="anav-logo" src="Icon-32.png" alt="" onerror="this.style.display='none'">
+    <svg class="app-icon" viewBox="0 0 180 180">
+      <rect width="180" height="180" rx="38" fill="#141414"/>
+      <text x="90" y="100" font-family="Arial,sans-serif" font-weight="900" font-size="44" fill="#E50914" text-anchor="middle">TO</text>
+      <text x="90" y="142" font-family="Arial,sans-serif" font-weight="900" font-size="30" fill="#fff" text-anchor="middle">TV+</text>
+    </svg>
     <div class="anav-title">TOTV+</div>
     <div class="anav-sp"></div>
     <div class="anav-user"><div class="dot"></div><span id="navU"></span></div>
@@ -337,6 +350,7 @@ body{
   </div>
 </div>
 
+<!-- PLAYER -->
 <div class="pmoda" id="pm">
   <div class="ptop">
     <button class="pbk" id="closePBtn">‹</button>
@@ -344,61 +358,139 @@ body{
   </div>
   <div class="pwrap" id="pwrap"></div>
 </div>
-
 <div class="toast" id="toast"></div>
 
 <script>
 'use strict';
 
-const CFG = {
-  PIN: '1212',
-  USERNAME: 'totv5201093051',
-  PASSWORD: '17348547711072',
-  SERVER: 'http://silka.m3um9xplus.org:2052',
-  TMDB_KEY: '5b166a24c91f59178e8ce30f1f3735c0',
-  TMDB_IMG: 'https://image.tmdb.org/t/p/',
-  TIMEOUT: 15000, RETRIES: 3, RETRY_DELAY: 2000
+/* ═══════════════════════════════════════════════════════
+   GENERATE PWA MANIFEST DYNAMICALLY (avoids manifest.json 404)
+═══════════════════════════════════════════════════════ */
+(function(){
+  /* Create a canvas icon for PWA */
+  function makeIconDataURL(size){
+    const c=document.createElement('canvas');c.width=size;c.height=size;
+    const x=c.getContext('2d');
+    /* Background */
+    x.fillStyle='#141414';
+    x.beginPath();x.roundRect(0,0,size,size,size*.21);x.fill();
+    /* Border */
+    x.strokeStyle='rgba(229,9,20,0.3)';x.lineWidth=size*.02;
+    x.beginPath();x.roundRect(size*.02,size*.02,size*.96,size*.96,size*.19);x.stroke();
+    /* Text TO */
+    x.fillStyle='#E50914';x.font=`900 ${size*.24}px Arial`;x.textAlign='center';
+    x.fillText('TO',size/2,size*.56);
+    /* Text TV+ */
+    x.fillStyle='#ffffff';x.font=`900 ${size*.17}px Arial`;
+    x.fillText('TV+',size/2,size*.79);
+    return c.toDataURL('image/png');
+  }
+
+  const icon192=makeIconDataURL(192);
+  const icon512=makeIconDataURL(512);
+
+  const manifest={
+    name:'TOTV+ Premium',
+    short_name:'TOTV+',
+    description:'مشغل قنوات وأفلام احترافي',
+    start_url:'./',
+    display:'standalone',
+    orientation:'any',
+    background_color:'#000000',
+    theme_color:'#000000',
+    icons:[
+      {src:icon192,sizes:'192x192',type:'image/png'},
+      {src:icon512,sizes:'512x512',type:'image/png',purpose:'any maskable'}
+    ]
+  };
+  const blob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
+  const url=URL.createObjectURL(blob);
+  const link=document.createElement('link');
+  link.rel='manifest';link.href=url;
+  /* Remove old manifest link if exists */
+  const old=document.querySelector('link[rel="manifest"]');
+  if(old)old.remove();
+  document.head.appendChild(link);
+
+  /* Also set apple-touch-icon to canvas PNG */
+  const appleLink=document.querySelector('link[rel="apple-touch-icon"]');
+  if(appleLink)appleLink.href=icon192;
+})();
+
+/* ═══════════════════════════════════════════════════════
+   CONFIG
+═══════════════════════════════════════════════════════ */
+const CFG={
+  PIN:'1212',
+  USERNAME:'totv5201093051',
+  PASSWORD:'17348547711072',
+  SERVER:'http://silka.m3um9xplus.org:2052',
+  TMDB_KEY:'5b166a24c91f59178e8ce30f1f3735c0',
+  TMDB_IMG:'https://image.tmdb.org/t/p/',
+  TIMEOUT:15000,RETRIES:3,RETRY_DELAY:2000
 };
 
-/*
- * ══════════════════════════════════════════════
- * HTTPS → HTTP PROTOCOL FIX
- * ══════════════════════════════════════════════
- * ROOT CAUSE: The site is hosted on totv.online.
- * When added to iOS home screen, Safari may load
- * it via HTTPS. The IPTV server (silka.m3um9xplus.org)
- * runs on HTTP only (port 2052, no SSL).
- *
- * Browser policy: HTTPS pages CANNOT fetch from HTTP
- * servers ("mixed content" blocked).
- *
- * SOLUTION: Detect HTTPS and redirect to HTTP version.
- * If redirect fails (HSTS), show manual link.
- */
-const ProtoFix = {
-  isHTTPS: location.protocol === 'https:',
-  init() {
-    if (!this.isHTTPS) return;
-    const httpUrl = location.href.replace(/^https:/, 'http:');
-    try { location.replace(httpUrl); } catch(e) {}
-    setTimeout(() => {
-      const w = document.getElementById('protoWarn');
-      const l = document.getElementById('httpLink');
-      if (w) w.style.display = 'block';
-      if (l) l.href = httpUrl;
-    }, 600);
+/* ═══════════════════════════════════════════════════════
+   PROTOCOL FIXER — Intercepts ALL URLs
+   ═══════════════════════════════════════════════════════
+   Problem: When the page loads via HTTPS (Safari home screen,
+   Google links, etc.), the browser blocks HTTP requests.
+   
+   Solution:
+   1. Auto-redirect HTTPS→HTTP on page load
+   2. For fetch(): wrap the native fetch to force http:// 
+      for IPTV server URLs
+   3. For <video> src: always use http://
+═══════════════════════════════════════════════════════ */
+const ProtoFix={
+  isHTTPS: location.protocol==='https:',
+  
+  init(){
+    if(!this.isHTTPS) return false;
+    
+    /* Auto-redirect to HTTP */
+    const httpUrl=location.href.replace(/^https:/,'http:');
+    
+    /* Show warning immediately */
+    setTimeout(()=>{
+      const w=document.getElementById('protoWarn');
+      const l=document.getElementById('httpLink');
+      if(w)w.style.display='block';
+      if(l)l.href=httpUrl;
+    },100);
+    
+    /* Try redirect */
+    try{location.replace(httpUrl)}catch(e){}
+    return true; /* Signal that we're on HTTPS */
+  },
+
+  /* Force any IPTV server URL to http:// */
+  fixUrl(url){
+    if(typeof url!=='string') return url;
+    /* Only fix URLs pointing to our IPTV server */
+    if(url.includes('m3um9xplus') || url.includes(CFG.SERVER.replace('http://',''))) {
+      return url.replace(/^https:/,'http:');
+    }
+    return url;
   }
 };
 
-const S = { curUrl:'', curTitle:'', cache:{lc:null,ls:{},mc:null,ms:{},sc:null,ss:{}}, tmdb:{trending:null,movies:null} };
+/* ═══════════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════════ */
+const S={curUrl:'',curTitle:'',cache:{lc:null,ls:{},mc:null,ms:{},sc:null,ss:{}},tmdb:{trending:null,movies:null}};
 
-const API = {
-  base(){ return CFG.SERVER; },
-  url(a,x=''){ return `${this.base()}/player_api.php?username=${CFG.USERNAME}&password=${CFG.PASSWORD}&action=${a}${x}`; },
-  live(id){ return `${this.base()}/live/${CFG.USERNAME}/${CFG.PASSWORD}/${id}`; },
-  vod(id){ return `${this.base()}/movie/${CFG.USERNAME}/${CFG.PASSWORD}/${id}.mp4`; },
-  ep(id,ext){ return `${this.base()}/series/${CFG.USERNAME}/${CFG.PASSWORD}/${id}.${ext||'mp4'}`; },
-  async fetch(url, tries=CFG.RETRIES){
+/* ═══════════════════════════════════════════════════════
+   API
+═══════════════════════════════════════════════════════ */
+const API={
+  base(){return CFG.SERVER},
+  url(a,x=''){return ProtoFix.fixUrl(`${this.base()}/player_api.php?username=${CFG.USERNAME}&password=${CFG.PASSWORD}&action=${a}${x}`)},
+  live(id){return ProtoFix.fixUrl(`${this.base()}/live/${CFG.USERNAME}/${CFG.PASSWORD}/${id}`)},
+  vod(id){return ProtoFix.fixUrl(`${this.base()}/movie/${CFG.USERNAME}/${CFG.PASSWORD}/${id}.mp4`)},
+  ep(id,ext){return ProtoFix.fixUrl(`${this.base()}/series/${CFG.USERNAME}/${CFG.PASSWORD}/${id}.${ext||'mp4'}`)},
+  async fetch(url,tries=CFG.RETRIES){
+    url=ProtoFix.fixUrl(url);
     let last;
     for(let i=0;i<tries;i++){
       try{
@@ -416,9 +508,16 @@ const API = {
 };
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
+/* ═══════════════════════════════════════════════════════
+   DEVICE DETECTION
+═══════════════════════════════════════════════════════ */
 const Device={
   isIOS:/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream,
   isSafari:/^((?!chrome|android).)*safari/i.test(navigator.userAgent),
+  isMac:/Macintosh/.test(navigator.userAgent),
+  isDesktop:!/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent),
+  /* iOS/Safari → native player (handles HLS natively, avoids protocol issues)
+     Desktop/Chrome/FF → HLS.js for live, native for VOD */
   useNativePlayer(){return this.isIOS||this.isSafari}
 };
 
@@ -429,15 +528,17 @@ const U={
   mpty(ico,msg){return`<div class="mpty"><div class="mpty-ico">${ico}</div><div class="mpty-txt">${msg}</div></div>`},
   vibe(p=10){try{navigator.vibrate?.(p)}catch(_){}}
 };
+const Sess={K:'_tv5',save(){try{localStorage.setItem(this.K,'1')}catch(_){}},load(){try{return localStorage.getItem(this.K)==='1'}catch(_){return false}},clear(){try{localStorage.removeItem(this.K)}catch(_){}}};
 
-const Sess={K:'_tv4',save(){try{localStorage.setItem(this.K,'1')}catch(_){}},load(){try{return localStorage.getItem(this.K)==='1'}catch(_){return false}},clear(){try{localStorage.removeItem(this.K)}catch(_){}}};
-
+/* ═══════════════════════════════════════════════════════
+   AUTH
+═══════════════════════════════════════════════════════ */
 const Auth={
   async checkPin(){
     const val=$('pinIn').value.trim();
     if(val!==CFG.PIN){
-      U.vibe([10,50,10,50,10]);const err=$('pinErr');err.textContent='رمز الدخول غير صحيح';err.classList.add('on');
-      $('pinIn').value='';$('pinIn').focus();setTimeout(()=>err.classList.remove('on'),2600);return;
+      U.vibe([10,50,10,50,10]);showErr('pinErr','رمز الدخول غير صحيح');
+      $('pinIn').value='';$('pinIn').focus();return;
     }
     U.vibe(15);const btn=$('pinBtn');btn.textContent='جاري الاتصال...';btn.disabled=true;
     try{
@@ -445,123 +546,211 @@ const Auth={
       if(!Array.isArray(d))throw new Error('bad');
       Sess.save();App.boot();
     }catch(e){
-      U.vibe([10,50,10,50,10]);btn.textContent='دخول';btn.disabled=false;
-      const err=$('pinErr');
-      if(ProtoFix.isHTTPS||(e.message&&e.message.includes('Failed to fetch'))){
-        err.textContent='تعذر الاتصال — جرّب الرابط أدناه';
+      btn.textContent='دخول';btn.disabled=false;
+      if(ProtoFix.isHTTPS){
+        showErr('pinErr','تعذر الاتصال — الصفحة HTTPS. استخدم الرابط أدناه',8000);
         $('protoWarn').style.display='block';
         $('httpLink').href=location.href.replace(/^https:/,'http:');
-      }else{err.textContent='تعذر الاتصال بالسيرفر. تحقق من الإنترنت'}
-      err.classList.add('on');setTimeout(()=>err.classList.remove('on'),5000);
+      }else{
+        showErr('pinErr','تعذر الاتصال بالسيرفر. تحقق من الإنترنت',4000);
+      }
     }
   },
   async autoLogin(){
     if(!Sess.load())return false;
-    try{const d=await API.fetch(API.url('get_live_categories'));return Array.isArray(d)}catch(_){Sess.clear();return false}
+    try{const d=await API.fetch(API.url('get_live_categories'));return Array.isArray(d)}
+    catch(_){Sess.clear();return false}
   },
   logout(){
     U.vibe(12);Sess.clear();S.cache={lc:null,ls:{},mc:null,ms:{},sc:null,ss:{}};
     if($('pm').classList.contains('on'))Player.close();
     $('app').classList.remove('on');$('lockScreen').classList.add('on');
-    $('pinIn').value='';$('pinBtn').textContent='دخول';$('pinBtn').disabled=false;U.toast('تم تسجيل الخروج');
+    $('pinIn').value='';$('pinBtn').textContent='دخول';$('pinBtn').disabled=false;
   }
 };
+function showErr(id,msg,ms=3000){const el=$(id);el.textContent=msg;el.classList.add('on');setTimeout(()=>el.classList.remove('on'),ms)}
 
+/* ═══════════════════════════════════════════════════════
+   TMDB
+═══════════════════════════════════════════════════════ */
 const TMDB={
   async fetchTrending(){try{const r=await fetch(`https://api.themoviedb.org/3/trending/movie/week?api_key=${CFG.TMDB_KEY}&language=ar`);const d=await r.json();S.tmdb.trending=(d.results||[]).slice(0,8);return S.tmdb.trending}catch(_){return[]}},
   async fetchPopular(){try{const r=await fetch(`https://api.themoviedb.org/3/movie/popular?api_key=${CFG.TMDB_KEY}&language=ar&page=1`);const d=await r.json();S.tmdb.movies=(d.results||[]).slice(0,15);return S.tmdb.movies}catch(_){return[]}},
   backdrop(p,s='w1280'){return p?CFG.TMDB_IMG+s+p:''},
   poster(p,s='w342'){return p?CFG.TMDB_IMG+s+p:''}
 };
-
 const Hero={
   _idx:0,_timer:null,
   async render(){
     const items=S.tmdb.trending||await TMDB.fetchTrending();if(!items?.length)return'';
     let sl='',dt='';
-    items.forEach((m,i)=>{
-      sl+=`<div class="hero-slide${i===0?' active':''}" style="background-image:url('${TMDB.backdrop(m.backdrop_path)}')"><div class="hero-fade"></div><div class="hero-content"><div class="hero-title">${U.esc(m.title||m.name)}</div><div class="hero-meta"><span class="hero-badge">TMDB</span><span>⭐ ${(m.vote_average||0).toFixed(1)}</span><span>${(m.release_date||'').slice(0,4)}</span></div></div></div>`;
-      dt+=`<div class="hero-dot${i===0?' on':''}"></div>`;
-    });
+    items.forEach((m,i)=>{sl+=`<div class="hero-slide${i===0?' active':''}" style="background-image:url('${TMDB.backdrop(m.backdrop_path)}')"><div class="hero-fade"></div><div class="hero-content"><div class="hero-title">${U.esc(m.title||m.name)}</div><div class="hero-meta"><span class="hero-badge">TMDB</span><span>⭐ ${(m.vote_average||0).toFixed(1)}</span><span>${(m.release_date||'').slice(0,4)}</span></div></div></div>`;dt+=`<div class="hero-dot${i===0?' on':''}"></div>`});
     return`<div class="hero" id="heroSlider">${sl}<div class="hero-dots">${dt}</div></div>`;
   },
   start(){this.stop();this._timer=setInterval(()=>this.next(),5000)},
   stop(){if(this._timer){clearInterval(this._timer);this._timer=null}},
   next(){const s=document.querySelectorAll('#heroSlider .hero-slide'),d=document.querySelectorAll('#heroSlider .hero-dot');if(!s.length)return;s[this._idx]?.classList.remove('active');d[this._idx]?.classList.remove('on');this._idx=(this._idx+1)%s.length;s[this._idx]?.classList.add('active');d[this._idx]?.classList.add('on')}
 };
-
-async function renderTMDBRow(){
-  const m=S.tmdb.movies||await TMDB.fetchPopular();if(!m?.length)return'';
-  let c='';m.forEach(v=>{c+=`<div class="tmdb-card"><img src="${TMDB.poster(v.poster_path,'w342')}" alt="${U.esc(v.title)}" loading="lazy" onerror="this.src=''"><div class="tc-title">${U.esc(v.title||v.name)}</div><div class="tc-year">${(v.release_date||'').slice(0,4)} · ⭐${(v.vote_average||0).toFixed(1)}</div></div>`});
-  return`<div class="section"><div class="section-hd"><div class="section-title">🔥 الأكثر رواجاً</div></div></div><div class="tmdb-row"><div class="tmdb-row-inner">${c}</div></div>`;
-}
+async function renderTMDBRow(){const m=S.tmdb.movies||await TMDB.fetchPopular();if(!m?.length)return'';let c='';m.forEach(v=>{c+=`<div class="tmdb-card"><img src="${TMDB.poster(v.poster_path)}" alt="" loading="lazy" onerror="this.src=''"><div class="tc-title">${U.esc(v.title||v.name)}</div><div class="tc-year">${(v.release_date||'').slice(0,4)} · ⭐${(v.vote_average||0).toFixed(1)}</div></div>`});return`<div class="section"><div class="section-hd"><div class="section-title">🔥 الأكثر رواجاً</div></div></div><div class="tmdb-row"><div class="tmdb-row-inner">${c}</div></div>`}
 
 const App={
   boot(){$('lockScreen').classList.remove('on');$('app').classList.add('on');$('navU').textContent=CFG.USERNAME;TMDB.fetchTrending();TMDB.fetchPopular();Content.loadTab('live')},
   switchTab(t){U.vibe(8);document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===t));document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id===`v-${t}`));Content.loadTab(t)}
 };
 
+/* ═══════════════════════════════════════════════════════
+   CONTENT
+═══════════════════════════════════════════════════════ */
 const ICO={live:['📺','🎬','⚽','📰','🎵','🌍','🏠','👶','🎮','📡','🔴','🎭','🌐','🏆','🎯','🔵','🟢','🎪','🌺','🏅'],movie:['🎬','🔥','🏆','😂','💥','❤️','👻','🚀','🌊','🎭','🕵️','🌍','🎵','🏋️','🌈','🎯','🧨','🦸','💀','🤠'],series:['📺','🔥','😂','💕','🔮','🕵️','🚀','🏆','🌍','🎭','👨‍👩‍👧','🌙','🎵','😱','🌊','🧩','👑','🌺','🤖','🧟']};
-
 const Content={
   loadTab(t){if(t==='live')this.loadLiveCats();if(t==='movies')this.loadMovCats();if(t==='series')this.loadSerCats()},
   async loadLiveCats(){const el=$('c-live');if(S.cache.lc){this._rLiveCats(S.cache.lc,el);return}el.innerHTML=U.ldr('جاري جلب القنوات...');try{S.cache.lc=await API.fetch(API.url('get_live_categories'));this._rLiveCats(S.cache.lc,el)}catch(_){el.innerHTML=U.mpty('📡','تعذّر جلب القنوات.\nتحقق من الاتصال')}},
   async _rLiveCats(cats,el){if(!cats?.length){el.innerHTML=U.mpty('📡','لا توجد فئات');return}let h=await Hero.render();h+=await renderTMDBRow();h+=`<div class="section"><div class="section-hd"><div class="section-title">📡 القنوات الحية</div><div class="section-count">${cats.length} فئة</div></div></div><div class="cat-list">`;cats.forEach((c,i)=>h+=catRow(c.category_id,ICO.live[i%ICO.live.length],c.category_name));h+='</div>';el.innerHTML=h;Hero.start();el.querySelectorAll('.cat-row').forEach(r=>r.addEventListener('click',()=>this.loadLiveStreams(r.dataset.id,r.querySelector('.cr-name').textContent)))},
-  async loadLiveStreams(cid,cname){U.vibe(10);Hero.stop();const el=$('c-live');el.innerHTML=U.ldr(`جاري جلب قنوات ${cname}...`);try{S.cache.ls[cid]=S.cache.ls[cid]||await API.fetch(API.url('get_live_streams',`&category_id=${cid}`));this._rLiveStr(S.cache.ls[cid],cname,el,cid)}catch(_){el.innerHTML=U.mpty('📡','تعذّر جلب القنوات.')}},
-  _rLiveStr(streams,cname,el,cid){if(!streams?.length){el.innerHTML=U.mpty('📡','لا توجد قنوات');return}const gid='lg'+cid;let h=`<button class="back-btn" id="bk-live">‹ رجوع</button><div class="section"><div class="section-hd"><div class="section-title">${U.esc(cname)}</div><div class="section-count">${streams.length}</div></div><div class="section-search"><input type="text" placeholder="بحث..." data-grid="${gid}"></div></div><div class="ch-grid" id="${gid}">`;streams.forEach(s=>{h+=`<div class="ch-card" data-sid="${s.stream_id}" data-name="${U.esc(s.name).toLowerCase()}"><div class="live-tag">LIVE</div>${s.stream_icon?`<img src="${U.esc(s.stream_icon)}" class="ch-logo" onerror="this.style.display='none'" loading="lazy">`:`<div class="ch-logo" style="display:flex;align-items:center;justify-content:center;font-size:1.3rem">📺</div>`}<div class="ch-name">${U.esc(s.name)}</div></div>`});h+='</div>';el.innerHTML=h;$('bk-live').onclick=()=>this.loadLiveCats();el.querySelector(`[data-grid="${gid}"]`).oninput=e=>flt(e.target.value,gid);el.querySelectorAll('.ch-card').forEach(c=>c.addEventListener('click',()=>Player.playLive(c.dataset.sid,c.querySelector('.ch-name').textContent)))},
+  async loadLiveStreams(cid,cn){U.vibe(10);Hero.stop();const el=$('c-live');el.innerHTML=U.ldr(`جاري جلب قنوات ${cn}...`);try{S.cache.ls[cid]=S.cache.ls[cid]||await API.fetch(API.url('get_live_streams',`&category_id=${cid}`));this._rLiveStr(S.cache.ls[cid],cn,el,cid)}catch(_){el.innerHTML=U.mpty('📡','تعذّر جلب القنوات.')}},
+  _rLiveStr(st,cn,el,cid){if(!st?.length){el.innerHTML=U.mpty('📡','لا توجد قنوات');return}const gid='lg'+cid;let h=`<button class="back-btn" id="bk-live">‹ رجوع</button><div class="section"><div class="section-hd"><div class="section-title">${U.esc(cn)}</div><div class="section-count">${st.length}</div></div><div class="section-search"><input type="text" placeholder="بحث..." data-grid="${gid}"></div></div><div class="ch-grid" id="${gid}">`;st.forEach(s=>{h+=`<div class="ch-card" data-sid="${s.stream_id}" data-name="${U.esc(s.name).toLowerCase()}"><div class="live-tag">LIVE</div>${s.stream_icon?`<img src="${U.esc(s.stream_icon)}" class="ch-logo" onerror="this.style.display='none'" loading="lazy">`:`<div class="ch-logo" style="display:flex;align-items:center;justify-content:center;font-size:1.3rem">📺</div>`}<div class="ch-name">${U.esc(s.name)}</div></div>`});h+='</div>';el.innerHTML=h;$('bk-live').onclick=()=>this.loadLiveCats();el.querySelector(`[data-grid="${gid}"]`).oninput=e=>flt(e.target.value,gid);el.querySelectorAll('.ch-card').forEach(c=>c.addEventListener('click',()=>Player.playLive(c.dataset.sid,c.querySelector('.ch-name').textContent)))},
   async loadMovCats(){const el=$('c-movies');if(S.cache.mc){this._rMovCats(S.cache.mc,el);return}el.innerHTML=U.ldr('جاري جلب الأفلام...');try{S.cache.mc=await API.fetch(API.url('get_vod_categories'));this._rMovCats(S.cache.mc,el)}catch(_){el.innerHTML=U.mpty('🎬','تعذّر جلب الأفلام.')}},
   async _rMovCats(cats,el){if(!cats?.length){el.innerHTML=U.mpty('🎬','لا توجد فئات');return}let h=await Hero.render();h+=await renderTMDBRow();h+=`<div class="section"><div class="section-hd"><div class="section-title">🎬 فئات الأفلام</div><div class="section-count">${cats.length} فئة</div></div></div><div class="cat-list">`;cats.forEach((c,i)=>h+=catRow(c.category_id,ICO.movie[i%ICO.movie.length],c.category_name));h+='</div>';el.innerHTML=h;Hero.start();el.querySelectorAll('.cat-row').forEach(r=>r.addEventListener('click',()=>this.loadMovStreams(r.dataset.id,r.querySelector('.cr-name').textContent)))},
-  async loadMovStreams(cid,cname){U.vibe(10);Hero.stop();const el=$('c-movies');el.innerHTML=U.ldr(`جاري جلب أفلام ${cname}...`);try{S.cache.ms[cid]=S.cache.ms[cid]||await API.fetch(API.url('get_vod_streams',`&category_id=${cid}`));this._rVodGrid(S.cache.ms[cid],cname,el,'movie',cid)}catch(_){el.innerHTML=U.mpty('🎬','تعذّر جلب الأفلام.')}},
+  async loadMovStreams(cid,cn){U.vibe(10);Hero.stop();const el=$('c-movies');el.innerHTML=U.ldr(`جاري جلب أفلام ${cn}...`);try{S.cache.ms[cid]=S.cache.ms[cid]||await API.fetch(API.url('get_vod_streams',`&category_id=${cid}`));this._rVodGrid(S.cache.ms[cid],cn,el,'movie',cid)}catch(_){el.innerHTML=U.mpty('🎬','تعذّر جلب الأفلام.')}},
   async loadSerCats(){const el=$('c-series');if(S.cache.sc){this._rSerCats(S.cache.sc,el);return}el.innerHTML=U.ldr('جاري جلب المسلسلات...');try{S.cache.sc=await API.fetch(API.url('get_series_categories'));this._rSerCats(S.cache.sc,el)}catch(_){el.innerHTML=U.mpty('📺','تعذّر جلب المسلسلات.')}},
   _rSerCats(cats,el){if(!cats?.length){el.innerHTML=U.mpty('📺','لا توجد فئات');return}let h=`<div class="section"><div class="section-hd"><div class="section-title">📺 فئات المسلسلات</div><div class="section-count">${cats.length} فئة</div></div></div><div class="cat-list">`;cats.forEach((c,i)=>h+=catRow(c.category_id,ICO.series[i%ICO.series.length],c.category_name));h+='</div>';el.innerHTML=h;el.querySelectorAll('.cat-row').forEach(r=>r.addEventListener('click',()=>this.loadSerStreams(r.dataset.id,r.querySelector('.cr-name').textContent)))},
-  async loadSerStreams(cid,cname){U.vibe(10);const el=$('c-series');el.innerHTML=U.ldr(`جاري جلب مسلسلات ${cname}...`);try{S.cache.ss[cid]=S.cache.ss[cid]||await API.fetch(API.url('get_series',`&category_id=${cid}`));this._rVodGrid(S.cache.ss[cid],cname,el,'series',cid)}catch(_){el.innerHTML=U.mpty('📺','تعذّر جلب المسلسلات.')}},
-  _rVodGrid(streams,cname,el,type,cid){if(!streams?.length){el.innerHTML=U.mpty('🎬','لا توجد محتويات');return}const bkId='bk-'+type+cid,gid='vg'+cid;let h=`<button class="back-btn" id="${bkId}">‹ رجوع</button><div class="section"><div class="section-hd"><div class="section-title">${U.esc(cname)}</div><div class="section-count">${streams.length}</div></div><div class="section-search"><input type="text" placeholder="بحث..." data-grid="${gid}"></div></div><div class="vod-grid" id="${gid}">`;streams.forEach(s=>{const img=s.stream_icon||s.cover||s.movie_image||'';const sc=s.rating?parseFloat(s.rating).toFixed(1):'';const sid=s.stream_id||s.series_id;h+=`<div class="vod-card" data-sid="${sid}" data-type="${type}" data-name="${U.esc(s.name).toLowerCase()}">${sc?`<div class="vod-score">⭐${sc}</div>`:''}<img src="${U.esc(img)}" class="vod-poster" onerror="this.src=''" loading="lazy" alt="${U.esc(s.name)}"><div class="vod-name">${U.esc(s.name)}</div></div>`});h+='</div>';el.innerHTML=h;$(bkId).onclick=()=>type==='movie'?this.loadMovCats():this.loadSerCats();el.querySelector(`[data-grid="${gid}"]`).oninput=e=>flt(e.target.value,gid);el.querySelectorAll('.vod-card').forEach(c=>c.addEventListener('click',()=>{const nm=c.querySelector('.vod-name').textContent;if(c.dataset.type==='movie')Player.playVod(c.dataset.sid,nm);else this.loadSerInfo(c.dataset.sid,nm)}))},
-  async loadSerInfo(sid,sname){U.vibe(10);const el=$('c-series');el.innerHTML=U.ldr('جاري جلب الحلقات...');try{const d=await API.fetch(API.url('get_series_info',`&series_id=${sid}`));this._rSerInfo(d,sname,el)}catch(_){el.innerHTML=U.mpty('📺','تعذّر جلب الحلقات.')}},
-  _rSerInfo(data,sname,el){const info=data.info||{},eps=data.episodes||{};const cover=info.cover||info.movie_image||'';let h=`<button class="back-btn" id="bk-ser-i">‹ رجوع</button><div style="display:flex;gap:12px;margin:0 14px 16px;flex-wrap:wrap;align-items:flex-start">${cover?`<img src="${U.esc(cover)}" style="width:80px;border-radius:10px;object-fit:cover;flex-shrink:0" loading="lazy" onerror="this.remove()">`:''}<div style="flex:1;min-width:0"><div style="font-size:1.05rem;font-weight:700;margin-bottom:4px">${U.esc(sname)}</div><div style="font-size:.75rem;color:var(--dim);line-height:1.7">${U.esc((info.plot||'').slice(0,200))}</div></div></div>`;const seasons=Object.keys(eps);if(!seasons.length){el.innerHTML=h+U.mpty('📺','لا توجد حلقات');return}seasons.forEach(sn=>{h+=`<div style="padding:0 14px;margin-bottom:18px"><div style="font-size:.88rem;font-weight:700;color:var(--accent);padding:7px 0;margin-bottom:8px;border-bottom:1px solid rgba(229,9,20,.12)">الموسم ${sn}</div><div class="ch-grid" style="padding:0">`;(eps[sn]||[]).forEach(ep=>{const thumb=ep.info?.movie_image||'';const ext=ep.container_extension||'mp4';h+=`<div class="ch-card ep-card" data-eid="${ep.id}" data-ext="${U.esc(ext)}" data-epn="${ep.episode_num}" data-sname="${U.esc(sname)}">${thumb?`<img src="${U.esc(thumb)}" class="ch-logo" style="height:40px;object-fit:cover;border-radius:8px" loading="lazy" onerror="this.remove()">`:`<div style="font-size:1.2rem;margin-bottom:5px">▶️</div>`}<div class="ch-name">حلقة ${ep.episode_num}</div></div>`});h+='</div></div>'});el.innerHTML=h;$('bk-ser-i').onclick=()=>this.loadSerCats();el.querySelectorAll('.ep-card').forEach(c=>c.addEventListener('click',()=>Player.playEp(c.dataset.eid,`${c.dataset.sname} — حلقة ${c.dataset.epn}`,c.dataset.ext)))}
+  async loadSerStreams(cid,cn){U.vibe(10);const el=$('c-series');el.innerHTML=U.ldr(`جاري جلب مسلسلات ${cn}...`);try{S.cache.ss[cid]=S.cache.ss[cid]||await API.fetch(API.url('get_series',`&category_id=${cid}`));this._rVodGrid(S.cache.ss[cid],cn,el,'series',cid)}catch(_){el.innerHTML=U.mpty('📺','تعذّر جلب المسلسلات.')}},
+  _rVodGrid(st,cn,el,type,cid){if(!st?.length){el.innerHTML=U.mpty('🎬','لا توجد محتويات');return}const bk='bk-'+type+cid,gid='vg'+cid;let h=`<button class="back-btn" id="${bk}">‹ رجوع</button><div class="section"><div class="section-hd"><div class="section-title">${U.esc(cn)}</div><div class="section-count">${st.length}</div></div><div class="section-search"><input type="text" placeholder="بحث..." data-grid="${gid}"></div></div><div class="vod-grid" id="${gid}">`;st.forEach(s=>{const img=s.stream_icon||s.cover||s.movie_image||'';const sc=s.rating?parseFloat(s.rating).toFixed(1):'';const sid=s.stream_id||s.series_id;h+=`<div class="vod-card" data-sid="${sid}" data-type="${type}" data-name="${U.esc(s.name).toLowerCase()}">${sc?`<div class="vod-score">⭐${sc}</div>`:''}<img src="${U.esc(img)}" class="vod-poster" onerror="this.src=''" loading="lazy"><div class="vod-name">${U.esc(s.name)}</div></div>`});h+='</div>';el.innerHTML=h;$(bk).onclick=()=>type==='movie'?this.loadMovCats():this.loadSerCats();el.querySelector(`[data-grid="${gid}"]`).oninput=e=>flt(e.target.value,gid);el.querySelectorAll('.vod-card').forEach(c=>c.addEventListener('click',()=>{const nm=c.querySelector('.vod-name').textContent;if(c.dataset.type==='movie')Player.playVod(c.dataset.sid,nm);else this.loadSerInfo(c.dataset.sid,nm)}))},
+  async loadSerInfo(sid,sn){U.vibe(10);const el=$('c-series');el.innerHTML=U.ldr('جاري جلب الحلقات...');try{const d=await API.fetch(API.url('get_series_info',`&series_id=${sid}`));this._rSerInfo(d,sn,el)}catch(_){el.innerHTML=U.mpty('📺','تعذّر جلب الحلقات.')}},
+  _rSerInfo(data,sn,el){const info=data.info||{},eps=data.episodes||{};const cover=info.cover||info.movie_image||'';let h=`<button class="back-btn" id="bk-ser-i">‹ رجوع</button><div style="display:flex;gap:12px;margin:0 14px 16px;flex-wrap:wrap;align-items:flex-start">${cover?`<img src="${U.esc(cover)}" style="width:80px;border-radius:10px;object-fit:cover;flex-shrink:0" loading="lazy" onerror="this.remove()">`:''}<div style="flex:1;min-width:0"><div style="font-size:1.05rem;font-weight:700;margin-bottom:4px">${U.esc(sn)}</div><div style="font-size:.75rem;color:var(--dim);line-height:1.7">${U.esc((info.plot||'').slice(0,200))}</div></div></div>`;const seasons=Object.keys(eps);if(!seasons.length){el.innerHTML=h+U.mpty('📺','لا توجد حلقات');return}seasons.forEach(s=>{h+=`<div style="padding:0 14px;margin-bottom:18px"><div style="font-size:.88rem;font-weight:700;color:var(--accent);padding:7px 0;margin-bottom:8px;border-bottom:1px solid rgba(229,9,20,.12)">الموسم ${s}</div><div class="ch-grid" style="padding:0">`;(eps[s]||[]).forEach(ep=>{const th=ep.info?.movie_image||'';const ext=ep.container_extension||'mp4';h+=`<div class="ch-card ep-card" data-eid="${ep.id}" data-ext="${U.esc(ext)}" data-epn="${ep.episode_num}" data-sname="${U.esc(sn)}">${th?`<img src="${U.esc(th)}" class="ch-logo" style="height:40px;object-fit:cover;border-radius:8px" loading="lazy" onerror="this.remove()">`:`<div style="font-size:1.2rem;margin-bottom:5px">▶️</div>`}<div class="ch-name">حلقة ${ep.episode_num}</div></div>`});h+='</div></div>'});el.innerHTML=h;$('bk-ser-i').onclick=()=>this.loadSerCats();el.querySelectorAll('.ep-card').forEach(c=>c.addEventListener('click',()=>Player.playEp(c.dataset.eid,`${c.dataset.sname} — حلقة ${c.dataset.epn}`,c.dataset.ext)))}
 };
-
 const $=id=>document.getElementById(id);
 const flt=(q,gid)=>{const g=$(gid);if(!g)return;const ql=q.toLowerCase();g.querySelectorAll('[data-name]').forEach(c=>{c.style.display=c.dataset.name.includes(ql)?'':'none'})};
 const catRow=(id,ico,name)=>`<div class="cat-row" data-id="${U.esc(id)}"><div class="cr-ico">${ico}</div><div class="cr-name">${U.esc(name)}</div><div class="cr-arr">‹</div></div>`;
 
+/* ═══════════════════════════════════════════════════════
+   PLAYER — Fixed for Desktop + iOS
+   ═══════════════════════════════════════════════════════
+   Desktop (Chrome/FF/Edge): 
+     - Live: HLS.js 
+     - VOD (mp4): native <video> with direct src
+   iOS/Safari:
+     - Everything: native <video> (handles HLS natively)
+═══════════════════════════════════════════════════════ */
 const Player={
   _hls:null,
   playLive(id,name){U.vibe(12);this.open(API.live(id)+'.m3u8',name,'📡 بث مباشر','live',id)},
   playVod(id,name){U.vibe(12);this.open(API.vod(id),name,'🎬 فيلم','vod',null)},
   playEp(id,name,ext){U.vibe(12);this.open(API.ep(id,ext),name,'📺 مسلسل','vod',null)},
-  open(url,title,sub,type,streamId){S.curUrl=url;S.curTitle=title;$('ptitle').textContent=title;$('psub').textContent=sub;$('pm').classList.add('on');document.body.style.overflow='hidden';history.pushState({player:true},'');this._build(url,type,streamId)},
+
+  open(url,title,sub,type,streamId){
+    url=ProtoFix.fixUrl(url);
+    S.curUrl=url;S.curTitle=title;
+    $('ptitle').textContent=title;$('psub').textContent=sub;
+    $('pm').classList.add('on');document.body.style.overflow='hidden';
+    history.pushState({player:true},'');
+    this._build(url,type,streamId);
+  },
+
   _build(url,type,streamId){
-    this._destroyAll();const wrap=$('pwrap');
-    const vid=document.createElement('video');vid.id='vplayer';
-    vid.setAttribute('playsinline','');vid.setAttribute('webkit-playsinline','');vid.setAttribute('x-webkit-airplay','allow');
-    vid.controls=true;vid.preload='auto';
+    this._destroyAll();
+    const wrap=$('pwrap');
+    const vid=document.createElement('video');
+    vid.id='vplayer';
+    vid.setAttribute('playsinline','');
+    vid.setAttribute('webkit-playsinline','');
+    vid.setAttribute('x-webkit-airplay','allow');
+    vid.controls=true;vid.preload='auto';vid.autoplay=true;
     vid.style.cssText='position:absolute;inset:0;width:100%;height:100%;background:#000;object-fit:contain;';
-    const bufEl=this._makeBuf();const errEl=this._makeErr(url,type,streamId);
-    wrap.appendChild(vid);wrap.appendChild(bufEl);wrap.appendChild(errEl);this._showBuf(true);
-    if(Device.useNativePlayer()){this._playNative(vid,url,type,streamId)}
-    else{const isM=/\.m3u8/.test(url)||type==='live';if(isM&&typeof Hls!=='undefined'&&Hls.isSupported()){this._playHLS(vid,url,streamId)}else{this._playNative(vid,url,type,streamId)}}
+
+    /* For desktop: add crossorigin to avoid CORS issues with some servers */
+    if(Device.isDesktop){
+      vid.crossOrigin='anonymous';
+    }
+
+    const bufEl=this._makeBuf();
+    const errEl=this._makeErr(url,type,streamId);
+    wrap.appendChild(vid);wrap.appendChild(bufEl);wrap.appendChild(errEl);
+    this._showBuf(true);
+
+    const isLive=type==='live'||/\.m3u8/i.test(url);
+
+    if(Device.useNativePlayer()){
+      /* iOS / Safari — native handles everything */
+      this._playNative(vid,url,type,streamId);
+    } else if(isLive && typeof Hls!=='undefined' && Hls.isSupported()){
+      /* Desktop + Live stream → HLS.js */
+      this._playHLS(vid,url,streamId);
+    } else {
+      /* Desktop + VOD (mp4/mkv) → native video 
+         IMPORTANT: For desktop mp4, we set src directly.
+         If crossOrigin causes issues, remove it */
+      vid.removeAttribute('crossorigin');
+      this._playNative(vid,url,type,streamId);
+    }
   },
+
   _playNative(vid,url,type,streamId){
-    vid.addEventListener('waiting',()=>this._showBuf(true));vid.addEventListener('playing',()=>this._showBuf(false));
-    vid.addEventListener('canplay',()=>this._showBuf(false));vid.addEventListener('loadeddata',()=>this._showBuf(false));
-    vid.addEventListener('error',()=>{if(url.endsWith('.m3u8')&&streamId){const ts=API.live(streamId)+'.ts';vid.src=ts;vid.load();vid.play().catch(()=>{})}else{this._showBuf(false);this._showErr(true,vid.error?.message||'تعذّر تشغيل البث')}});
-    vid.src=url;vid.load();vid.play().catch(()=>this._showBuf(false));
+    vid.addEventListener('waiting',()=>this._showBuf(true));
+    vid.addEventListener('playing',()=>this._showBuf(false));
+    vid.addEventListener('canplay',()=>this._showBuf(false));
+    vid.addEventListener('loadeddata',()=>this._showBuf(false));
+    vid.addEventListener('error',()=>{
+      /* If m3u8 failed on native, try .ts fallback */
+      if(url.endsWith('.m3u8')&&streamId){
+        const ts=ProtoFix.fixUrl(API.live(streamId)+'.ts');
+        console.warn('[Player] m3u8 failed, trying .ts:',ts);
+        vid.src=ts;vid.load();vid.play().catch(()=>{});
+      } else if(vid.getAttribute('crossorigin')){
+        /* If CORS error, retry without crossorigin */
+        console.warn('[Player] Retrying without crossOrigin');
+        vid.removeAttribute('crossorigin');
+        vid.src=url;vid.load();vid.play().catch(()=>{});
+      } else {
+        this._showBuf(false);
+        this._showErr(true,'تعذّر تشغيل المحتوى. تأكد من صلاحية الاشتراك');
+      }
+    });
+    vid.src=url;vid.load();
+    vid.play().catch(e=>{
+      console.warn('[Player] autoplay blocked:',e.message);
+      this._showBuf(false);
+    });
   },
+
   _playHLS(vid,url,streamId){
-    this._hls=new Hls({enableWorker:true,lowLatencyMode:true,backBufferLength:30,maxBufferLength:60,maxMaxBufferLength:120,fragLoadingTimeOut:20000,manifestLoadingTimeOut:15000,levelLoadingTimeOut:15000});
-    this._hls.loadSource(url);this._hls.attachMedia(vid);
+    this._hls=new Hls({
+      enableWorker:true,lowLatencyMode:true,
+      backBufferLength:30,maxBufferLength:60,maxMaxBufferLength:120,
+      fragLoadingTimeOut:20000,manifestLoadingTimeOut:15000,levelLoadingTimeOut:15000,
+      xhrSetup:(xhr)=>{/* No custom headers to avoid CORS preflight */}
+    });
+    this._hls.loadSource(url);
+    this._hls.attachMedia(vid);
     this._hls.on(Hls.Events.MANIFEST_PARSED,()=>{this._showBuf(false);vid.play().catch(()=>{})});
-    this._hls.on(Hls.Events.ERROR,(_,d)=>{if(!d.fatal)return;if(d.type===Hls.ErrorTypes.NETWORK_ERROR&&url.endsWith('.m3u8')&&streamId){const ts=API.live(streamId)+'.ts';this._hls.destroy();this._hls=null;this._hls=new Hls({enableWorker:true,lowLatencyMode:true});this._hls.loadSource(ts);this._hls.attachMedia(vid)}else if(d.type===Hls.ErrorTypes.MEDIA_ERROR){this._hls.recoverMediaError()}else{this._showBuf(false);this._showErr(true,'تعذّر تشغيل البث: '+d.details)}});
-    vid.addEventListener('waiting',()=>this._showBuf(true));vid.addEventListener('playing',()=>this._showBuf(false));vid.addEventListener('canplay',()=>this._showBuf(false));
+    this._hls.on(Hls.Events.ERROR,(_,d)=>{
+      if(!d.fatal)return;
+      if(d.type===Hls.ErrorTypes.NETWORK_ERROR&&url.endsWith('.m3u8')&&streamId){
+        const ts=ProtoFix.fixUrl(API.live(streamId)+'.ts');
+        this._hls.destroy();this._hls=null;
+        this._hls=new Hls({enableWorker:true,lowLatencyMode:true});
+        this._hls.loadSource(ts);this._hls.attachMedia(vid);
+      }else if(d.type===Hls.ErrorTypes.MEDIA_ERROR){
+        this._hls.recoverMediaError();
+      }else{
+        this._showBuf(false);this._showErr(true,'تعذّر تشغيل البث: '+d.details);
+      }
+    });
+    vid.addEventListener('waiting',()=>this._showBuf(true));
+    vid.addEventListener('playing',()=>this._showBuf(false));
+    vid.addEventListener('canplay',()=>this._showBuf(false));
   },
+
   _makeBuf(){const d=document.createElement('div');d.className='bufov on';d.id='bufov';d.innerHTML='<div class="buf-ring"></div><div class="buf-txt">جاري التحميل...</div>';return d},
-  _makeErr(url,type,streamId){const d=document.createElement('div');d.className='errov';d.id='errov';d.innerHTML=`<div class="err-ico">⚠️</div><div class="err-msg" id="ermsg">تعذّر تشغيل البث.</div><button class="retry-btn" id="retryBtn">إعادة المحاولة</button>`;setTimeout(()=>{const rb=$('retryBtn');if(rb)rb.onclick=()=>{U.vibe(10);this._build(url,type,streamId)}},0);return d},
+  _makeErr(url,type,sid){const d=document.createElement('div');d.className='errov';d.id='errov';d.innerHTML=`<div class="err-ico">⚠️</div><div class="err-msg" id="ermsg">تعذّر تشغيل البث.</div><button class="retry-btn" id="retryBtn">إعادة المحاولة</button>`;setTimeout(()=>{const rb=$('retryBtn');if(rb)rb.onclick=()=>{U.vibe(10);this._build(url,type,sid)}},0);return d},
   _showBuf(s){const el=$('bufov');if(el)el.classList.toggle('on',s)},
   _showErr(s,msg=''){const el=$('errov');if(el)el.classList.toggle('on',s);if(s&&msg){const m=$('ermsg');if(m)m.textContent=msg}},
   _destroyAll(){if(this._hls){try{this._hls.destroy()}catch(_){}this._hls=null}const wrap=$('pwrap');while(wrap.firstChild)wrap.removeChild(wrap.firstChild)},
   close(){U.vibe(8);this._destroyAll();$('pm').classList.remove('on');document.body.style.overflow=''}
 };
 
+/* ═══════════════════════════════════════════════════════
+   EVENTS
+═══════════════════════════════════════════════════════ */
 function setupEvents(){
   $('pinBtn').onclick=()=>Auth.checkPin();
   $('pinIn').onkeydown=e=>{if(e.key==='Enter')Auth.checkPin()};
@@ -576,15 +765,34 @@ function setupEvents(){
   document.addEventListener('contextmenu',e=>{if(e.target.matches('video,.ch-card,.vod-card'))e.preventDefault()});
 }
 
+/* ═══════════════════════════════════════════════════════
+   BOOT
+═══════════════════════════════════════════════════════ */
 window.addEventListener('load',async()=>{
-  ProtoFix.init();
+  /* Fix HTTPS → HTTP */
+  const redirected=ProtoFix.init();
+
   if(ProtoFix.isHTTPS){
-    setTimeout(()=>{$('splash').classList.add('hide');$('lockScreen').classList.add('on');$('protoWarn').style.display='block';$('httpLink').href=location.href.replace(/^https:/,'http:')},1200);
+    /* We're on HTTPS. Redirect was attempted.
+       Show lock screen with warning in case redirect didn't work */
+    setTimeout(()=>{
+      $('splash').classList.add('hide');
+      $('lockScreen').classList.add('on');
+      $('protoWarn').style.display='block';
+      $('httpLink').href=location.href.replace(/^https:/,'http:');
+    },1200);
+    /* Still set up events so user can try PIN if somehow it works */
+    setupEvents();
     return;
   }
+
   setupEvents();
   const loggedIn=await Auth.autoLogin();
-  setTimeout(()=>{$('splash').classList.add('hide');if(loggedIn){App.boot()}else{$('lockScreen').classList.add('on');$('pinIn').focus()}},1500);
+  setTimeout(()=>{
+    $('splash').classList.add('hide');
+    if(loggedIn)App.boot();
+    else{$('lockScreen').classList.add('on');$('pinIn').focus()}
+  },1500);
 });
 </script>
 </body>

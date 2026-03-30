@@ -3,39 +3,67 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="TOTV+">
 <meta name="theme-color" content="#000000">
 <meta name="format-detection" content="telephone=no">
+
+<script>
+    if (location.protocol === 'https:') {
+        location.replace(location.href.replace('https:', 'http:'));
+    }
+</script>
+
 <meta http-equiv="Content-Security-Policy" content="
   default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;
   media-src * blob: data:;
   img-src * data: blob:;
 ">
 
-<!-- Icons -->
 <link rel="icon" type="image/png" sizes="32x32" href="Icon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="Icon-16.png">
 <link rel="apple-touch-icon" sizes="180x180" href="Icon-180.png">
-<link rel="apple-touch-icon" href="Icon-180.png">
 <link rel="manifest" href="manifest.json">
 
 <title>TOTV+</title>
 
-<!-- Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
 
-<!-- Video.js CSS -->
 <link href="https://cdnjs.cloudflare.com/ajax/libs/video.js/8.6.1/video-js.min.css" rel="stylesheet">
 
-<!-- Video.js JS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/video.js/8.6.1/video.min.js"></script>
 
-<!-- HLS.js — for non-Safari browsers -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.7/hls.min.js"></script>
 
+<script>
+    window.addEventListener('DOMContentLoaded', () => {
+        const savedUser = localStorage.getItem('totv_user');
+        const savedPass = localStorage.getItem('totv_pass');
+        
+        // إذا وجدت بيانات محفوظة، سيتم تعبئتها تلقائياً عند تحميل الصفحة
+        if (savedUser && savedPass) {
+            const uField = document.querySelector('input[type="text"]') || document.getElementById('username');
+            const pField = document.querySelector('input[type="password"]') || document.getElementById('password');
+            
+            if (uField && pField) {
+                uField.value = savedUser;
+                pField.value = savedPass;
+                // يمكنك استدعاء دالة تسجيل الدخول هنا إذا أردت دخولاً تلقائياً بالكامل
+            }
+        }
+    });
+
+    // دالة لاستدعائها عند الضغط على زر Login لحفظ البيانات
+    function saveCredentials(u, p) {
+        localStorage.setItem('totv_user', u);
+        localStorage.setItem('totv_pass', p);
+    }
+</script>
+
 <style>
+/* هنا يبدأ الـ CSS الخاص بك دون أي تغيير */
 /* ════════════════════════════════════════════
    BASE RESET
 ════════════════════════════════════════════ */

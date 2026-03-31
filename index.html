@@ -1,57 +1,28 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  
-  <script>
-    // إجبار المتصفح على بيئة HTTP لضمان عمل سيرفر 2052
-    if (location.protocol === 'https:' && !location.hostname.includes('localhost')) {
-        location.replace(location.href.replace('https:', 'http:'));
-    }
-    
-    // تعريف دالة الاختصار لضمان استقرار الكود الأصلي
-    const $ = id => document.getElementById(id);
-
-    // استرجاع بيانات الدخول فور تشغيل التطبيق
-    window.addEventListener('DOMContentLoaded', () => {
-        const savedU = localStorage.getItem('totv_u');
-        const savedP = localStorage.getItem('totv_p');
-        if (savedU && savedP) {
-            if($('uIn')) $('uIn').value = savedU;
-            if($('pIn')) $('pIn').value = savedP;
-        }
-    });
-  </script>
-
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="TOTV+">
-  <meta name="theme-color" content="#000000">
-  <meta name="format-detection" content="telephone=no">
-
-  <meta http-equiv="Content-Security-Policy" content="
-    default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;
-    media-src * blob: data: http: https:;
-    img-src * data: blob: http: https:;
-    connect-src * http: https: ws: wss:;
-    worker-src blob: 'self';
-  ">
-
-  <link rel="icon" type="image/png" sizes="32x32" href="Icon-32.png">
-  <link rel="apple-touch-icon" href="Icon-180.png">
-  <link rel="manifest" href="manifest.json">
-
-  <title>TOTV+</title>
-
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.7/hls.min.js"></script>
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TOTV+">
+<meta name="theme-color" content="#000000">
+<meta name="format-detection" content="telephone=no">
+<meta name="description" content="TOTV+ Premium Streaming">
+<meta http-equiv="Content-Security-Policy" content="
+  default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;
+  media-src * blob: data: http: https:;
+  img-src * data: blob: http: https:;
+  connect-src * http: https: ws: wss:;
+  worker-src blob: 'self';
+">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%23141414'/%3E%3Ctext x='90' y='105' font-family='Arial' font-weight='900' font-size='42' fill='%23E50914' text-anchor='middle'%3ETO%3C/text%3E%3Ctext x='90' y='145' font-family='Arial' font-weight='900' font-size='28' fill='%23fff' text-anchor='middle'%3ETV+%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%23141414'/%3E%3Ctext x='90' y='105' font-family='Arial' font-weight='900' font-size='42' fill='%23E50914' text-anchor='middle'%3ETO%3C/text%3E%3Ctext x='90' y='145' font-family='Arial' font-weight='900' font-size='28' fill='%23fff' text-anchor='middle'%3ETV+%3C/text%3E%3C/svg%3E">
+<title>TOTV+</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.7/hls.min.js"></script>
 <style>
-/* يبدأ الـ CSS الخاص بك هنا دون تغيير */
-<style>
-/* يبدأ الـ CSS الخاص بك هنا دون تغيير */
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
 :root{
 --accent:#E50914;--accent-d:#B20710;--accent-l:#FF1926;

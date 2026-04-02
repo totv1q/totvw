@@ -754,6 +754,27 @@ html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Cairo',s
 </style>
 </head>
 <body>
+  <!-- Firebase SDK (Compat) + Config -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCk0dSmHGQ248b-OQi44Rm2zWrfbpLBkpU",
+      authDomain: "totvq-8e439.firebaseapp.com",
+      projectId: "totvq-8e439",
+      storageBucket: "totvq-8e439.firebasestorage.app",
+      messagingSenderId: "214530463737",
+      appId: "1:214530463737:web:8c45ab9fcb43807a164f28",
+      measurementId: "G-4QLB7GVRJT"
+    };
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+  </script>
+  <script src="flutter.js" defer></script>
+</body>
+</html>
 
 <!-- ══ SPLASH ══ -->
 <div id="splash">
@@ -941,7 +962,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Cairo',s
       <button class="sub-btn code" onclick="closeModal('modal-sub');showActivate()">
         🔑 أدخل كود التفعيل
       </button>
-      <div class="sub-email-note">للاستفسار: <a href="mailto:totv.support@gmail.com" style="color:var(--tg)">totv.support@gmail.com</a></div>
+      <div class="sub-email-note">للاستفسار: <a href="/cdn-cgi/l/email-protection#0b7f647f7d25787e7b7b64797f4b6c666a626725686466" style="color:var(--tg)"><span class="__cf_email__" data-cfemail="e4908b9092ca979194948b9690a48389858d88ca878b89">[email&#160;protected]</span></a></div>
     </div>
   </div>
 </div>
@@ -1009,7 +1030,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Cairo',s
 <!-- ══════════════════════════════════════════════
      JAVASCRIPT
      ══════════════════════════════════════════════ -->
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ── Firebase Init ─────────────────────────────────────────
 firebase.initializeApp({
   apiKey:            'AIzaSyCk0dSmHGQ248b-OQi44Rm2zWrfbpLBkpU',
@@ -2150,12 +2171,8 @@ function showToast(msg) {
   toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
 }
 
-// ── Support wiring ─────────────────────────────────────────
-// Override menu-row support click
-document.addEventListener('click', e => {
-  const row = e.target.closest('[onclick*="modal-support"]');
-  if (row) { e.preventDefault(); openChatSupport(); }
-});
+// ── Support wiring ────────────────────────────────�
+  // Support wiring done above
 </script>
 </body>
 </html>

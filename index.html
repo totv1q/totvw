@@ -1315,10 +1315,8 @@ function startRCListeners() {
         if (!s.exists) return;
         const d = s.data();
         if (d.banned) { auth.signOut(); return; }
-        if (d.plan && d.plan !== APP.plan) {
-          APP.plan = d.plan;
-          renderProfile();
-        }
+        // Plan always premium — ignore Firestore plan field
+        APP.plan = 'premium';
       });
     }
   });
@@ -1371,19 +1369,8 @@ function hideSplash() {
 
 // ── User Plan ──────────────────────────────────────────────
 async function loadUserPlan(user) {
-  try {
-    // check vip_users
-    const vip = await db.collection('vip_users').doc(user.uid).get();
-    if (vip.exists) {
-      const d = vip.data();
-      if (d.active) {
-        APP.plan   = d.plan || 'premium';
-        APP.expiry = d.expiry_date?.toDate?.() || null;
-      }
-    } else {
-      APP.plan = 'free';
-    }
-  } catch(_) { APP.plan = 'free'; }
+  // All content is free — no subscription check
+  APP.plan = 'premium';
   renderProfile();
 }
 
@@ -1462,7 +1449,7 @@ function enterAsGuest() {
   auth.signInAnonymously().catch(() => {
     // جلسة ضيف محلية بدون Firebase
     APP.user = {uid:'guest',isAnonymous:true,displayName:'ضيف'};
-    APP.plan = 'free';
+    APP.plan = 'premium';
     showApp();
   });
 }
@@ -1685,7 +1672,7 @@ function portraitCard(item, type) {
     <div class="card-p-img">
       ${img ? `<img src="${img}" alt="${name}" loading="lazy" onerror="this.style.display='none'">` : `<div class="no-img">${name}</div>`}
       ${isNew ? `<div class="card-p-badge new">جديد</div>` : ''}
-      ${isPremNeeded && APP.plan==='free' ? `<div class="card-p-badge sub">👑</div>` : ''}
+      
     </div>
     <div class="card-p-name">${name}</div>
   </div>`;
@@ -1717,23 +1704,19 @@ function renderHero() {
   APP.heroes.forEach((item, i) => {
     const img  = item.stream_icon||item.cover||item.logo||'';
     const name = item.name||item.title||'';
-    const isGuest = APP.plan==='free';
-    const needSub = needsSub(item);
     slidesHtml += `
       <div class="hero-slide${i===0?' on':''}" id="hero-${i}">
         <div class="hero-bg" id="hero-bg-${i}" style="${img?`background-image:url(${img})`:'background:var(--surface)'}"></div>
         <div class="hero-overlay"></div><div class="hero-overlay2"></div>
         <div class="hero-content">
           <div class="hero-tags">
-            ${isGuest||needSub ? '<span class="hero-tag gold">👑 Premium</span>' : '<span class="hero-tag new">✦ جديد</span>'}
+            <span class="hero-tag new">✦ جديد</span>
           </div>
           <div class="hero-title">${name}</div>
           <div class="hero-meta" id="hero-meta-${i}"></div>
           <div class="hero-btns">
-            <button class="hero-play${(isGuest||needSub)?' subscribe':''}" onclick="heroPlay(${i})">
-              ${(isGuest||needSub)
-                ? '<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5m-20-5 10 5 10-5"/></svg> اشترك الآن'
-                : '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg> تشغيل'}
+            <button class="hero-play" onclick="heroPlay(${i})">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg> تشغيل
             </button>
             <button class="hero-info-btn" onclick="heroInfo(${i})">
               <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -1946,8 +1929,6 @@ function openInfo(item, type) {
   const year   = item.year||item.releasedate||item.release_date||'';
   const genre  = item.genre||item.category_name||'';
   const plot   = item.plot||item.description||item.overview||'';
-  const needPrem = APP.plan==='free'||needsSub(item);
-
   document.getElementById('info-content').innerHTML = `
     <div class="info-poster" style="${img?`background-image:url(${img})`:''}" >
       <div class="info-poster-overlay"></div>
@@ -1960,10 +1941,8 @@ function openInfo(item, type) {
         ${rating?`<span class="sep">·</span><span>⭐ ${parseFloat(rating).toFixed(1)}</span>`:''}
       </div>
       ${plot?`<div class="info-overview">${plot}</div>`:''}
-      <button class="info-play-btn ${needPrem?'sub':'play'}" onclick="playItem(${JSON.stringify(item).replace(/"/g,'&quot;')},'${type}')">
-        ${needPrem
-          ? `<svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5m-20-5 10 5 10-5"/></svg> اشترك للمشاهدة`
-          : `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg> تشغيل الآن`}
+      <button class="info-play-btn play" onclick="playItem(${JSON.stringify(item).replace(/"/g,'&quot;')},'${type}')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg> تشغيل الآن
       </button>
     </div>`;
   openModal('modal-info');
@@ -2080,13 +2059,12 @@ function renderSeriesPage() {
     const name = item.name||item.title||'';
     const year = item.year||item.releasedate||'';
     const rating = item.rating||item.rating_5based||'';
-    const needPrem = needsSub(item);
     html += `<div class="series-poster-card" onclick="openInfo(${JSON.stringify(item).replace(/"/g,'&quot;')},'series')">
       <div class="series-poster-img">
         ${img
           ? `<img src="${img}" alt="${name}" loading="lazy" onerror="this.parentNode.style.background='var(--surface)';this.remove()">`
           : `<div class="series-poster-no-img">${name}</div>`}
-        ${needPrem && APP.plan==='free' ? '<div class="series-poster-crown">👑</div>' : ''}
+        
         ${isNewContent(item) ? '<div class="series-poster-new">جديد</div>' : ''}
       </div>
       <div class="series-poster-info">
@@ -2290,7 +2268,7 @@ function showAbout() {
 async function doLogout() {
   if (!confirm('هل تريد تسجيل الخروج؟')) return;
   await auth.signOut();
-  APP.plan = 'free'; APP.expiry = null;
+  APP.plan = 'premium'; APP.expiry = null;
   showToast('👋 تم تسجيل الخروج');
 }
 

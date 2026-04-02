@@ -31,11 +31,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Cinzel:wght@700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 
-<!-- Firebase -->
+<!-- Firebase SDK — single load -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
 
 <style>
 /* ══════════════════════════════════════════════
@@ -831,33 +830,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Cairo',s
 </style>
 </head>
 <body>
-  <!-- Firebase SDK (Compat) + App Config -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-  <script>
-    // Initialize Firebase (guard against duplicate init from head scripts)
-    if (!firebase.apps.length) {
-      firebase.initializeApp({
-        apiKey:            "AIzaSyCk0dSmHGQ248b-OQi44Rm2zWrfbpLBkpU",
-        authDomain:        "totvq-8e439.firebaseapp.com",
-        projectId:         "totvq-8e439",
-        storageBucket:     "totvq-8e439.firebasestorage.app",
-        messagingSenderId: "214530463737",
-        appId:             "1:214530463737:web:8c45ab9fcb43807a164f28",
-        measurementId:     "G-4QLB7GVRJT"
-      });
-    }
-    // Enable Firestore offline persistence for Safari/iOS caching
-    try {
-      firebase.firestore().enablePersistence({synchronizeTabs: true}).catch(err => {
-        if (err.code === 'failed-precondition') {
-          firebase.firestore().enablePersistence().catch(() => {});
-        }
-      });
-    } catch(e) {}
-  </script>
-
 <!-- ══ SPLASH ══ -->
 <div id="splash">
   <div class="splash-logo">TOTV+</div>
@@ -1128,42 +1100,164 @@ html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Cairo',s
 <!-- ══════════════════════════════════════════════
      JAVASCRIPT
      ══════════════════════════════════════════════ -->
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
 // ── Firebase Init ─────────────────────────────────────────
-firebase.initializeApp({
-  apiKey:            'AIzaSyCk0dSmHGQ248b-OQi44Rm2zWrfbpLBkpU',
-  authDomain:        'totvq-8e439.firebaseapp.com',
-  projectId:         'totvq-8e439',
-  storageBucket:     'totvq-8e439.firebasestorage.app',
-  messagingSenderId: '214530463737',
-  appId:             '1:214530463737:web:8c45ab9fcb43807a164f28',
-  measurementId:     'G-4QLB7GVRJT',
-});
+if (!firebase.apps.length) {
+  firebase.initializeApp({
+    apiKey: 'AIzaSyCk0dSmHGQ248b-OQi44Rm2zWrfbpLBkpU',
+    authDomain: 'totvq-8e439.firebaseapp.com',
+    projectId: 'totvq-8e439',
+    storageBucket: 'totvq-8e439.firebasestorage.app',
+    messagingSenderId: '214530463737',
+    appId: '1:214530463737:web:8c45ab9fcb43807a164f28',
+    measurementId: 'G-4QLB7GVRJT',
+  });
+}
 const auth = firebase.auth();
 const db   = firebase.firestore();
 const F    = firebase.firestore.FieldValue;
 
 // ── State ──────────────────────────────────────────────────
 let APP = {
-  user:      null,
-  plan:      'free',   // free | premium | totv
-  expiry:    null,
-  heroes:    [],
-  heroIdx:   0,
-  heroTimer: null,
-  movies:    [],
-  series:    [],
-  live:      [],
-  mCats:     [],
-  sCats:     [],
-  lCats:     [],
-  loaded:    false,
+  user:        null,
+  plan:        'premium', // always premium - all content free
+  expiry:      null,
+  heroes:      [],
+  heroIdx:     0,
+  heroTimer:   null,
+  movies:      [],
+  series:      [],
+  live:        [],
+  mCats:       [],
+  sCats:       [],
+  lCats:       [],
+  loaded:      false,
   maintenance: false,
-  locked:    false,
+  locked:      false,
   currentPage: 'home',
-  searchType: 'all',
+  searchType:  'all',
   chatHistory: [],
+  activeServer: null,  // tracks the working Xtream server
 };
+
+// ── Stream Player (HTTP IPTV) ─────────────────────────────
+function playStream(url, title) {
+  if (!url) { showToast('⚠ الرابط غير متاح'); return; }
+  
+  // Build player overlay
+  let overlay = document.getElementById('player-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'player-overlay';
+    overlay.style.cssText = \`
+      position:fixed;inset:0;z-index:8000;background:#000;
+      display:flex;flex-direction:column;\`;
+    overlay.innerHTML = \`
+      <div id="player-topbar" style="
+        display:flex;align-items:center;gap:12px;
+        padding:calc(var(--safe-top,0px)+10px) 16px 10px;
+        background:linear-gradient(to bottom,rgba(0,0,0,.9),transparent);
+        position:absolute;top:0;left:0;right:0;z-index:2;
+      ">
+        <button onclick="closePlayer()" style="
+          background:rgba(255,255,255,.15);border:none;color:#fff;
+          width:36px;height:36px;border-radius:50%;font-size:18px;
+          cursor:pointer;display:flex;align-items:center;justify-content:center;
+        ">✕</button>
+        <div id="player-title" style="font-size:14px;font-weight:700;color:#fff;flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis"></div>
+      </div>
+      <video id="main-video" style="width:100%;height:100%;background:#000;"
+        controls playsinline webkit-playsinline autoplay
+        x-webkit-airplay="allow"
+      ></video>
+      <div id="player-status" style="
+        position:absolute;bottom:60px;left:50%;transform:translateX(-50%);
+        background:rgba(0,0,0,.8);color:#fff;padding:8px 16px;
+        border-radius:8px;font-size:13px;display:none;
+      "></div>\`;
+    document.body.appendChild(overlay);
+  }
+
+  const video = document.getElementById('main-video');
+  const titleEl = document.getElementById('player-title');
+  const status  = document.getElementById('player-status');
+  overlay.style.display = 'flex';
+  if (titleEl) titleEl.textContent = title;
+
+  function setStatus(msg, hide) {
+    if (!status) return;
+    status.textContent = msg;
+    status.style.display = msg ? 'block' : 'none';
+    if (hide) setTimeout(()=>{ status.style.display='none'; }, 3000);
+  }
+
+  // Try HLS via native video first (Safari supports natively)
+  function tryNative(src) {
+    video.src = src;
+    video.load();
+    video.play().catch(e => {
+      setStatus('تعذّر التشغيل التلقائي — اضغط play', true);
+    });
+  }
+
+  // Try loading HLS.js for non-Safari
+  function tryHLS(src) {
+    if (window.Hls && Hls.isSupported()) {
+      const hls = new Hls({ enableWorker: false, lowLatencyMode: true });
+      hls.loadSource(src);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        video.play().catch(()=>{});
+        setStatus('', false);
+      });
+      hls.on(Hls.Events.ERROR, (_, d) => {
+        if (d.fatal) {
+          setStatus('⚠ خطأ في التشغيل', true);
+          hls.destroy();
+        }
+      });
+    } else {
+      tryNative(src);
+    }
+  }
+
+  // Determine stream type and play
+  const isM3U8 = url.includes('.m3u8') || url.includes('live/');
+  setStatus('⏳ جاري التحميل...', false);
+
+  if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    // Safari / iOS — native HLS support
+    tryNative(url);
+    setStatus('', true);
+  } else if (isM3U8) {
+    // Load HLS.js dynamically for Chrome/Android
+    if (!window.Hls) {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.10/hls.min.js';
+      s.onload = () => tryHLS(url);
+      s.onerror = () => tryNative(url);
+      document.head.appendChild(s);
+    } else {
+      tryHLS(url);
+    }
+  } else {
+    tryNative(url);
+  }
+
+  // Lock screen orientation to landscape on mobile
+  try {
+    screen.orientation.lock('landscape').catch(()=>{});
+  } catch(e) {}
+}
+
+function closePlayer() {
+  const overlay = document.getElementById('player-overlay');
+  const video   = document.getElementById('main-video');
+  if (video) { video.pause(); video.src = ''; }
+  if (overlay) overlay.style.display = 'none';
+  try { screen.orientation.unlock(); } catch(e) {}
+}
+
 
 // ── Firestore RC Listeners ─────────────────────────────────
 function startRCListeners() {
@@ -1243,8 +1337,7 @@ function hideMaintenance() {
 window.addEventListener('load', () => {
   // Register Service Worker
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('firebase-messaging-sw.js',{scope:'/'})
-      .catch(()=>{});
+    // Service Worker disabled
   }
 
   startRCListeners();
@@ -1484,13 +1577,19 @@ async function fetchFromServer(srv) {
   if (!h||!u) return false;
 
   const base = `${h}/player_api.php?username=${u}&password=${p}`;
+  const fetchJSON = (url) => fetch(url, {
+    mode: 'cors',
+    headers: { 'Accept': 'application/json' }
+  }).then(r => r.json()).catch(() =>
+    fetch(url).then(r => r.json()).catch(() => [])
+  );
   const [movies, series, live, mCats, sCats, lCats] = await Promise.all([
-    fetch(`${base}&action=get_vod_streams`).then(r=>r.json()).catch(()=>[]),
-    fetch(`${base}&action=get_series`).then(r=>r.json()).catch(()=>[]),
-    fetch(`${base}&action=get_live_streams`).then(r=>r.json()).catch(()=>[]),
-    fetch(`${base}&action=get_vod_categories`).then(r=>r.json()).catch(()=>[]),
-    fetch(`${base}&action=get_series_categories`).then(r=>r.json()).catch(()=>[]),
-    fetch(`${base}&action=get_live_categories`).then(r=>r.json()).catch(()=>[]),
+    fetchJSON(`${base}&action=get_vod_streams`),
+    fetchJSON(`${base}&action=get_series`),
+    fetchJSON(`${base}&action=get_live_streams`),
+    fetchJSON(`${base}&action=get_vod_categories`),
+    fetchJSON(`${base}&action=get_series_categories`),
+    fetchJSON(`${base}&action=get_live_categories`),
   ]);
 
   if (!Array.isArray(movies)&&!Array.isArray(live)) return false;
@@ -1502,12 +1601,14 @@ async function fetchFromServer(srv) {
   APP.sCats  = Array.isArray(sCats)  ? sCats  : [];
   APP.lCats  = Array.isArray(lCats)  ? lCats  : [];
   APP.loaded = true;
+  APP.activeServer = srv; // save working server for stream URL building
 
   saveToCache({movies:APP.movies.slice(0,3000), series:APP.series.slice(0,3000),
                live:APP.live.slice(0,2000), mCats:APP.mCats, sCats:APP.sCats, lCats:APP.lCats});
 
   renderHome();
   if (APP.currentPage==='live') renderLive();
+  if (APP.currentPage==='series') renderSeriesPage();
   return true;
 }
 
@@ -1651,9 +1752,6 @@ function renderHero() {
 function heroPlay(i) {
   const item = APP.heroes[i];
   if (!item) return;
-  if (APP.plan==='free' || needsSub(item)) {
-    openModal('modal-sub'); return;
-  }
   openInfo(item, item.series_id ? 'series' : 'movie');
 }
 
@@ -1765,10 +1863,10 @@ function renderLive() {
 
 // ── Open Live ─────────────────────────────────────────────
 function openLive(ch) {
-  if (APP.plan==='free') { openModal('modal-sub'); return; }
   const url = (ch.direct_source||ch.url||'');
-  if (url) { window.open(url,'_blank'); }
-  else { showToast('⚠ الرابط غير متاح حالياً'); }
+  if (url) {
+    playStream(url, ch.name||'');
+  } else { showToast('⚠ الرابط غير متاح حالياً'); }
 }
 
 // ── Live Section Page (View All) ──────────────────────────
@@ -1872,24 +1970,30 @@ function openInfo(item, type) {
 }
 
 function playItem(item, type) {
-  if (APP.plan==='free'||needsSub(item)) {
-    closeModal('modal-info');
-    setTimeout(()=>openModal('modal-sub'),200);
-    return;
-  }
-  const id  = item.stream_id||item.series_id||'';
-  const ext = item.container_extension||'mp4';
-  // Build URL from server
-  if (!id) { showToast('⚠ الرابط غير متاح'); return; }
-  showToast('▶ جاري الفتح...');
   closeModal('modal-info');
+  const id  = item.stream_id||item.series_id||'';
+  if (!id) { showToast('⚠ الرابط غير متاح'); return; }
+  // Build Xtream stream URL from active server
+  const srv = APP.activeServer;
+  if (!srv) { showToast('⚠ لا يوجد سيرفر متاح'); return; }
+  const h = (srv.host||'').replace(/\/$/, '');
+  const u = srv.username||'';
+  const p = srv.password||'';
+  let url = '';
+  if (type === 'live') {
+    url = `${h}/live/${u}/${p}/${id}.m3u8`;
+  } else if (type === 'series') {
+    url = `${h}/series/${u}/${p}/${id}.mkv`;
+  } else {
+    const ext = item.container_extension||'mp4';
+    url = `${h}/movie/${u}/${p}/${id}.${ext}`;
+  }
+  playStream(url, item.name||item.title||'');
 }
 
 // ── Subscription Logic ────────────────────────────────────
 function needsSub(item) {
-  if (APP.plan!=='free') return false;
-  const year = parseInt(item.year||item.releasedate||'0');
-  return year >= 2025;
+  return false; // All content free — no subscription required
 }
 function isNewContent(item) {
   const year = parseInt(item.year||item.releasedate||'0');
@@ -1954,7 +2058,7 @@ function renderSeriesPage() {
   }
 
   // Build category filter
-  let filterHtml = '<button class="series-cat-btn' + (seriesActiveCat==='all'?' on':'') + '" onclick="setSeriesCat('all')">الكل</button>';
+  let filterHtml = '<button class="series-cat-btn' + (seriesActiveCat==='all'?' on':'') + '" onclick="setSeriesCat(\'all\')">الكل</button>';
   APP.sCats.slice(0,12).forEach(cat => {
     const id = cat.category_id||cat.id||'';
     const nm = cat.category_name||cat.name||'';
@@ -2359,11 +2463,6 @@ function showToast(msg) {
   // Support wiring done above
 </script>
 
-<!-- Service Worker Registration for Safari Cache -->
-<script>
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/sw.js", {scope: "/"}).catch(() => {});
-}
-</script>
+
 </body>
 </html>

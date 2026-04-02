@@ -751,30 +751,112 @@ html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Cairo',s
   .search-grid{grid-template-columns:repeat(5,1fr)}
   .card-ch{width:110px}.card-ch-img{width:110px;height:110px}
 }
+
+/* ══════════════════════════════════════════════
+   SERIES PAGE — Poster Grid
+   ══════════════════════════════════════════════ */
+.series-page-header{
+  position:sticky;top:0;z-index:50;
+  background:linear-gradient(to bottom,var(--bg) 80%,transparent);
+  padding:8px 0 0;
+}
+.series-filter-row{
+  display:flex;gap:8px;padding:0 16px 10px;
+  overflow-x:auto;-webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+.series-filter-row::-webkit-scrollbar{display:none}
+.series-cat-btn{
+  flex-shrink:0;padding:7px 14px;
+  border-radius:20px;border:1px solid var(--bdr);
+  background:var(--surface);color:var(--t2);
+  font-size:12px;font-weight:600;font-family:'Cairo',sans-serif;
+  cursor:pointer;transition:.2s;white-space:nowrap;
+}
+.series-cat-btn.on{
+  background:var(--gold);color:#000;border-color:var(--gold);
+}
+.series-poster-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;padding:8px 12px;
+}
+@media(min-width:480px){.series-poster-grid{grid-template-columns:repeat(4,1fr)}}
+@media(min-width:768px){.series-poster-grid{grid-template-columns:repeat(5,1fr)}}
+
+.series-poster-card{cursor:pointer;animation:sIn .3s ease both}
+.series-poster-img{
+  position:relative;
+  aspect-ratio:.67;border-radius:10px;overflow:hidden;
+  background:var(--surface);border:1px solid var(--bdr);
+  transition:transform .2s,box-shadow .2s;
+}
+.series-poster-card:active .series-poster-img{
+  transform:scale(.96);box-shadow:0 4px 20px rgba(0,0,0,.5);
+}
+.series-poster-img img{
+  width:100%;height:100%;object-fit:cover;display:block;
+}
+.series-poster-no-img{
+  width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  padding:8px;font-size:10px;color:var(--t3);text-align:center;line-height:1.4;
+}
+.series-poster-crown{
+  position:absolute;top:6px;right:6px;
+  font-size:14px;background:rgba(0,0,0,.7);
+  border-radius:6px;padding:2px 4px;
+}
+.series-poster-new{
+  position:absolute;top:6px;left:6px;
+  background:var(--gold);color:#000;
+  font-size:9px;font-weight:800;font-family:'Cairo',sans-serif;
+  padding:2px 6px;border-radius:4px;
+}
+.series-poster-info{padding:5px 2px 0}
+.series-poster-name{
+  font-size:11px;font-weight:600;color:var(--tx);
+  overflow:hidden;display:-webkit-box;
+  -webkit-line-clamp:2;-webkit-box-orient:vertical;
+  line-height:1.4;
+}
+.series-poster-meta{
+  display:flex;gap:6px;margin-top:3px;
+  font-size:10px;color:var(--t3);
+}
+.series-empty{
+  text-align:center;padding:60px 20px;color:var(--t3);
+  display:flex;flex-direction:column;align-items:center;gap:12px;
+}
+.series-empty-icon{font-size:48px}
 </style>
 </head>
 <body>
-  <!-- Firebase SDK (Compat) + Config -->
+  <!-- Firebase SDK (Compat) + App Config -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyCk0dSmHGQ248b-OQi44Rm2zWrfbpLBkpU",
-      authDomain: "totvq-8e439.firebaseapp.com",
-      projectId: "totvq-8e439",
-      storageBucket: "totvq-8e439.firebasestorage.app",
-      messagingSenderId: "214530463737",
-      appId: "1:214530463737:web:8c45ab9fcb43807a164f28",
-      measurementId: "G-4QLB7GVRJT"
-    };
+    // Initialize Firebase (guard against duplicate init from head scripts)
     if (!firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
+      firebase.initializeApp({
+        apiKey:            "AIzaSyCk0dSmHGQ248b-OQi44Rm2zWrfbpLBkpU",
+        authDomain:        "totvq-8e439.firebaseapp.com",
+        projectId:         "totvq-8e439",
+        storageBucket:     "totvq-8e439.firebasestorage.app",
+        messagingSenderId: "214530463737",
+        appId:             "1:214530463737:web:8c45ab9fcb43807a164f28",
+        measurementId:     "G-4QLB7GVRJT"
+      });
     }
+    // Enable Firestore offline persistence for Safari/iOS caching
+    try {
+      firebase.firestore().enablePersistence({synchronizeTabs: true}).catch(err => {
+        if (err.code === 'failed-precondition') {
+          firebase.firestore().enablePersistence().catch(() => {});
+        }
+      });
+    } catch(e) {}
   </script>
-  <script src="flutter.js" defer></script>
-</body>
-</html>
 
 <!-- ══ SPLASH ══ -->
 <div id="splash">
@@ -899,6 +981,16 @@ html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Cairo',s
       </div>
     </div>
 
+
+    <!-- SERIES PAGE -->
+    <div class="page" id="pg-series">
+      <div class="series-page-header">
+        <div class="series-filter-row" id="series-cat-filter"></div>
+      </div>
+      <div id="series-poster-grid"></div>
+      <div style="height:20px"></div>
+    </div>
+
     <!-- PROFILE PAGE -->
     <div class="page" id="pg-profile">
       <div id="profile-content"></div>
@@ -922,6 +1014,12 @@ html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Cairo',s
       </svg>
       <span>مباشر</span>
       <div class="nav-dot"></div>
+    </div>
+    <div class="nav-item" id="ni-series" onclick="nav('series')">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="8,21 12,17 16,21"/>
+      </svg>
+      <span>مسلسلات</span>
     </div>
     <div class="nav-item" id="ni-search" onclick="nav('search')">
       <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -1204,8 +1302,26 @@ function showAuthScreen() {
 function showApp() {
   document.getElementById('auth-screen').classList.remove('show');
   document.getElementById('app').classList.add('show');
-  if (!APP.loaded) loadContent();
   renderProfile();
+  // Load from cache immediately for instant display, then refresh from network
+  const cached = loadFromCache();
+  if (cached && !APP.loaded) {
+    APP.movies = cached.movies||[];
+    APP.series = cached.series||[];
+    APP.live   = cached.live||[];
+    APP.mCats  = cached.mCats||[];
+    APP.sCats  = cached.sCats||[];
+    APP.lCats  = cached.lCats||[];
+    APP.loaded = true;
+    renderHome();
+    showToast('✅ تم تحميل المحتوى');
+  }
+  // Always refresh in background
+  fetchFromNetwork().then(() => {
+    renderHome();
+    if (APP.currentPage === 'live') renderLive();
+    if (APP.currentPage === 'series') renderSeriesPage();
+  });
 }
 function authTab(t) {
   document.getElementById('form-login').style.display   = t==='login'  ? '' : 'none';
@@ -1287,6 +1403,7 @@ function nav(pg) {
   APP.currentPage = pg;
   if (pg === 'profile') renderProfile();
   if (pg === 'live' && !document.getElementById('live-sections').innerHTML) renderLive();
+  if (pg === 'series') renderSeriesPage();
 }
 function focusSearch() { nav('search'); document.getElementById('search-input').focus(); }
 function onTopSearch(v) {
@@ -1824,6 +1941,73 @@ async function doActivate() {
   }
 }
 
+
+// ── SERIES PAGE ───────────────────────────────────────────
+let seriesActiveCat = 'all';
+
+function renderSeriesPage() {
+  const filterEl = document.getElementById('series-cat-filter');
+  const gridEl   = document.getElementById('series-poster-grid');
+  if (!APP.series.length) {
+    if (gridEl) gridEl.innerHTML = '<div class="series-empty"><div class="series-empty-icon">🎬</div><div>جاري تحميل المسلسلات...</div></div>';
+    return;
+  }
+
+  // Build category filter
+  let filterHtml = '<button class="series-cat-btn' + (seriesActiveCat==='all'?' on':'') + '" onclick="setSeriesCat('all')">الكل</button>';
+  APP.sCats.slice(0,12).forEach(cat => {
+    const id = cat.category_id||cat.id||'';
+    const nm = cat.category_name||cat.name||'';
+    if (!id||!nm) return;
+    const on = seriesActiveCat===id?' on':'';
+    filterHtml += `<button class="series-cat-btn${on}" onclick="setSeriesCat('${id}')">${nm}</button>`;
+  });
+  if (filterEl) filterEl.innerHTML = filterHtml;
+
+  // Filter items
+  const items = seriesActiveCat==='all'
+    ? APP.series
+    : APP.series.filter(s => s.category_id == seriesActiveCat);
+
+  // Render poster grid
+  let html = '<div class="series-poster-grid">';
+  items.slice(0, 200).forEach(item => {
+    const img  = item.stream_icon||item.cover||item.logo||'';
+    const name = item.name||item.title||'';
+    const year = item.year||item.releasedate||'';
+    const rating = item.rating||item.rating_5based||'';
+    const needPrem = needsSub(item);
+    html += `<div class="series-poster-card" onclick="openInfo(${JSON.stringify(item).replace(/"/g,'&quot;')},'series')">
+      <div class="series-poster-img">
+        ${img
+          ? `<img src="${img}" alt="${name}" loading="lazy" onerror="this.parentNode.style.background='var(--surface)';this.remove()">`
+          : `<div class="series-poster-no-img">${name}</div>`}
+        ${needPrem && APP.plan==='free' ? '<div class="series-poster-crown">👑</div>' : ''}
+        ${isNewContent(item) ? '<div class="series-poster-new">جديد</div>' : ''}
+      </div>
+      <div class="series-poster-info">
+        <div class="series-poster-name">${name}</div>
+        <div class="series-poster-meta">
+          ${year ? `<span>${year}</span>` : ''}
+          ${rating ? `<span>⭐ ${parseFloat(rating).toFixed(1)}</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+
+  if (items.length > 200) {
+    html += `<div style="text-align:center;padding:16px;color:var(--t3);font-size:12px">عرض 200 من ${items.length} مسلسل</div>`;
+  }
+
+  if (gridEl) gridEl.innerHTML = html || '<div class="series-empty"><div class="series-empty-icon">📭</div><div>لا توجد مسلسلات في هذه الفئة</div></div>';
+}
+
+function setSeriesCat(id) {
+  seriesActiveCat = id;
+  renderSeriesPage();
+}
+
 // ── Search ────────────────────────────────────────────────
 let searchTimer = null;
 function doSearch(q) {
@@ -2173,6 +2357,13 @@ function showToast(msg) {
 
 // ── Support wiring ────────────────────────────────�
   // Support wiring done above
+</script>
+
+<!-- Service Worker Registration for Safari Cache -->
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js", {scope: "/"}).catch(() => {});
+}
 </script>
 </body>
 </html>

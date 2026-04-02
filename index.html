@@ -1140,120 +1140,215 @@ let APP = {
   activeServer: null,  // tracks the working Xtream server
 };
 
-// ── Stream Player (HTTP IPTV) ─────────────────────────────
+// ══════════════════════════════════════════════
+//  IPTV PLAYER — HLS + MP4 + Live + VOD + Series
+// ══════════════════════════════════════════════
+let _hlsInstance = null;
+
+function getSrv() {
+  // Use active server, or rebuild from cache fallback
+  if (APP.activeServer) return APP.activeServer;
+  // Fallback to hardcoded server if activeServer not yet set
+  return {
+    host:     'http://silka.m3um9xplus.org:2052',
+    username: 'totv5201093051',
+    password: '17348547711072',
+  };
+}
+
+function buildStreamUrl(item, type) {
+  const srv = getSrv();
+  const h   = (srv.host||'').replace(/\/$/, '');
+  const u   = srv.username||'';
+  const p   = srv.password||'';
+  const id  = item.stream_id || item.series_id || item.id || '';
+  if (!id || !h) return '';
+  if (type === 'live') {
+    // Xtream live: try ts format (more compatible) then m3u8
+    return `${h}/live/${u}/${p}/${id}.ts`;
+  } else if (type === 'movie') {
+    const ext = item.container_extension || item.format || 'mp4';
+    return `${h}/movie/${u}/${p}/${id}.${ext}`;
+  } else if (type === 'episode') {
+    const ext = item.container_extension || item.format || 'mkv';
+    return `${h}/series/${u}/${p}/${id}.${ext}`;
+  }
+  return '';
+}
+
+function buildPlayerHTML(title) {
+  return `
+  <div style="
+    display:flex;align-items:center;gap:10px;
+    padding:calc(env(safe-area-inset-top,0px) + 10px) 14px 10px;
+    background:linear-gradient(to bottom,rgba(0,0,0,.95),transparent);
+    position:absolute;top:0;left:0;right:0;z-index:10;pointer-events:none;
+  ">
+    <button id="btn-close-player" style="
+      pointer-events:all;
+      background:rgba(255,255,255,.18);border:none;color:#fff;
+      width:38px;height:38px;border-radius:50%;font-size:20px;line-height:1;
+      cursor:pointer;flex-shrink:0;
+    ">✕</button>
+    <div id="player-title" style="
+      font-size:14px;font-weight:700;color:#fff;
+      flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+      pointer-events:none;
+    ">${title}</div>
+  </div>
+  <video id="main-video"
+    style="width:100%;height:100%;background:#000;display:block;"
+    controls playsinline webkit-playsinline
+    x-webkit-airplay="allow"
+    preload="auto"
+  ></video>
+  <div id="player-msg" style="
+    position:absolute;bottom:70px;left:50%;transform:translateX(-50%);
+    background:rgba(0,0,0,.85);color:#fff;padding:10px 18px;
+    border-radius:10px;font-size:13px;font-family:'Cairo',sans-serif;
+    white-space:nowrap;display:none;z-index:11;text-align:center;
+  "></div>`;
+}
+
+function showPlayerMsg(msg, autohide) {
+  const el = document.getElementById('player-msg');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.display = msg ? 'block' : 'none';
+  if (autohide && msg) setTimeout(() => { el.style.display = 'none'; }, 3500);
+}
+
+function destroyHls() {
+  if (_hlsInstance) { try { _hlsInstance.destroy(); } catch(e){} _hlsInstance = null; }
+}
+
 function playStream(url, title) {
   if (!url) { showToast('⚠ الرابط غير متاح'); return; }
-  
-  // Build player overlay
+
+  // Destroy any previous HLS instance
+  destroyHls();
+
+  // Create or reuse overlay
   let overlay = document.getElementById('player-overlay');
   if (!overlay) {
     overlay = document.createElement('div');
     overlay.id = 'player-overlay';
     overlay.style.cssText = `
-      position:fixed;inset:0;z-index:8000;background:#000;
-      display:flex;flex-direction:column;`;
-    overlay.innerHTML = `
-      <div id="player-topbar" style="
-        display:flex;align-items:center;gap:12px;
-        padding:calc(var(--safe-top,0px)+10px) 16px 10px;
-        background:linear-gradient(to bottom,rgba(0,0,0,.9),transparent);
-        position:absolute;top:0;left:0;right:0;z-index:2;
-      ">
-        <button onclick="closePlayer()" style="
-          background:rgba(255,255,255,.15);border:none;color:#fff;
-          width:36px;height:36px;border-radius:50%;font-size:18px;
-          cursor:pointer;display:flex;align-items:center;justify-content:center;
-        ">✕</button>
-        <div id="player-title" style="font-size:14px;font-weight:700;color:#fff;flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis"></div>
-      </div>
-      <video id="main-video" style="width:100%;height:100%;background:#000;"
-        controls playsinline webkit-playsinline autoplay
-        x-webkit-airplay="allow"
-      ></video>
-      <div id="player-status" style="
-        position:absolute;bottom:60px;left:50%;transform:translateX(-50%);
-        background:rgba(0,0,0,.8);color:#fff;padding:8px 16px;
-        border-radius:8px;font-size:13px;display:none;
-      "></div>`;
+      position:fixed;inset:0;z-index:8000;
+      background:#000;display:none;flex-direction:column;`;
     document.body.appendChild(overlay);
   }
+  overlay.innerHTML = buildPlayerHTML(title);
+  overlay.style.display = 'flex';
+
+  // Close button
+  document.getElementById('btn-close-player').onclick = closePlayer;
 
   const video = document.getElementById('main-video');
-  const titleEl = document.getElementById('player-title');
-  const status  = document.getElementById('player-status');
-  overlay.style.display = 'flex';
-  if (titleEl) titleEl.textContent = title;
+  showPlayerMsg('⏳ جاري التحميل...', false);
 
-  function setStatus(msg, hide) {
-    if (!status) return;
-    status.textContent = msg;
-    status.style.display = msg ? 'block' : 'none';
-    if (hide) setTimeout(()=>{ status.style.display='none'; }, 3000);
+  // ── Auto-play after user interaction: muted first then unmute ──
+  function doPlay() {
+    const p = video.play();
+    if (p && p.catch) {
+      p.catch(() => {
+        // Autoplay blocked — try muted
+        video.muted = true;
+        video.play().then(() => {
+          video.muted = false;
+          showPlayerMsg('', false);
+        }).catch(() => {
+          showPlayerMsg('▶ اضغط على زر التشغيل', false);
+        });
+      });
+    }
   }
 
-  // Try HLS via native video first (Safari supports natively)
-  function tryNative(src) {
-    video.src = src;
-    video.load();
-    video.play().catch(e => {
-      setStatus('تعذّر التشغيل التلقائي — اضغط play', true);
+  // ── HLS.js loader ──
+  function startHls(src) {
+    if (!window.Hls) {
+      showPlayerMsg('⏳ تحميل المشغل...', false);
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.15/hls.min.js';
+      document.head.appendChild(s);
+      s.onload  = () => attachHls(src);
+      s.onerror = () => { showPlayerMsg('⚠ فشل تحميل المشغل', true); fallbackNative(src); };
+    } else {
+      attachHls(src);
+    }
+  }
+
+  function attachHls(src) {
+    destroyHls();
+    const hls = new Hls({
+      enableWorker:      false,
+      lowLatencyMode:    true,
+      maxBufferLength:   30,
+      maxMaxBufferLength:60,
+      liveSyncDuration:  3,
+      xhrSetup: function(xhr) {
+        xhr.withCredentials = false;
+      }
+    });
+    _hlsInstance = hls;
+    hls.loadSource(src);
+    hls.attachMedia(video);
+    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      showPlayerMsg('', false);
+      doPlay();
+    });
+    hls.on(Hls.Events.ERROR, (_, data) => {
+      if (data.fatal) {
+        switch(data.type) {
+          case Hls.ErrorTypes.NETWORK_ERROR:
+            showPlayerMsg('⚠ خطأ في الشبكة — إعادة المحاولة...', false);
+            hls.startLoad();
+            break;
+          case Hls.ErrorTypes.MEDIA_ERROR:
+            showPlayerMsg('⚠ خطأ في الوسائط — إصلاح...', false);
+            hls.recoverMediaError();
+            break;
+          default:
+            showPlayerMsg('⚠ تعذّر التشغيل', true);
+            destroyHls();
+            break;
+        }
+      }
     });
   }
 
-  // Try loading HLS.js for non-Safari
-  function tryHLS(src) {
-    if (window.Hls && Hls.isSupported()) {
-      const hls = new Hls({ enableWorker: false, lowLatencyMode: true });
-      hls.loadSource(src);
-      hls.attachMedia(video);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        video.play().catch(()=>{});
-        setStatus('', false);
-      });
-      hls.on(Hls.Events.ERROR, (_, d) => {
-        if (d.fatal) {
-          setStatus('⚠ خطأ في التشغيل', true);
-          hls.destroy();
-        }
-      });
-    } else {
-      tryNative(src);
-    }
+  function fallbackNative(src) {
+    video.src = src;
+    video.load();
+    doPlay();
   }
 
-  // Determine stream type and play
-  const isM3U8 = url.includes('.m3u8') || url.includes('live/');
-  setStatus('⏳ جاري التحميل...', false);
+  // ── Decide playback method ──
+  const isHLS = url.includes('.m3u8') || url.includes('/live/') || url.includes('/ts');
+  const canNativeHLS = video.canPlayType('application/vnd.apple.mpegurl') !== '';
 
-  if (video.canPlayType('application/vnd.apple.mpegurl')) {
-    // Safari / iOS — native HLS support
-    tryNative(url);
-    setStatus('', true);
-  } else if (isM3U8) {
-    // Load HLS.js dynamically for Chrome/Android
-    if (!window.Hls) {
-      const s = document.createElement('script');
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.10/hls.min.js';
-      s.onload = () => tryHLS(url);
-      s.onerror = () => tryNative(url);
-      document.head.appendChild(s);
-    } else {
-      tryHLS(url);
-    }
+  if (canNativeHLS) {
+    // Safari / iOS — native HLS
+    fallbackNative(url);
+    showPlayerMsg('', false);
+  } else if (isHLS) {
+    // Chrome / Android — use HLS.js
+    startHls(url);
   } else {
-    tryNative(url);
+    // MP4 / MKV direct
+    fallbackNative(url);
+    showPlayerMsg('', false);
   }
 
-  // Lock screen orientation to landscape on mobile
-  try {
-    screen.orientation.lock('landscape').catch(()=>{});
-  } catch(e) {}
+  // Landscape on mobile
+  try { screen.orientation.lock('landscape').catch(()=>{}); } catch(e) {}
 }
 
 function closePlayer() {
+  destroyHls();
+  const video = document.getElementById('main-video');
+  if (video) { try { video.pause(); video.src = ''; video.load(); } catch(e){} }
   const overlay = document.getElementById('player-overlay');
-  const video   = document.getElementById('main-video');
-  if (video) { video.pause(); video.src = ''; }
   if (overlay) overlay.style.display = 'none';
   try { screen.orientation.unlock(); } catch(e) {}
 }
@@ -1846,10 +1941,12 @@ function renderLive() {
 
 // ── Open Live ─────────────────────────────────────────────
 function openLive(ch) {
-  const url = (ch.direct_source||ch.url||'');
-  if (url) {
-    playStream(url, ch.name||'');
-  } else { showToast('⚠ الرابط غير متاح حالياً'); }
+  // Try direct_source first, fallback to built URL
+  const direct = ch.direct_source || ch.url || '';
+  const built  = buildStreamUrl(ch, 'live');
+  const url    = direct || built;
+  if (!url) { showToast('⚠ الرابط غير متاح حالياً'); return; }
+  playStream(url, ch.name || '');
 }
 
 // ── Live Section Page (View All) ──────────────────────────
@@ -1950,24 +2047,174 @@ function openInfo(item, type) {
 
 function playItem(item, type) {
   closeModal('modal-info');
-  const id  = item.stream_id||item.series_id||'';
-  if (!id) { showToast('⚠ الرابط غير متاح'); return; }
-  // Build Xtream stream URL from active server
-  const srv = APP.activeServer;
-  if (!srv) { showToast('⚠ لا يوجد سيرفر متاح'); return; }
-  const h = (srv.host||'').replace(/\/$/, '');
-  const u = srv.username||'';
-  const p = srv.password||'';
-  let url = '';
-  if (type === 'live') {
-    url = `${h}/live/${u}/${p}/${id}.m3u8`;
-  } else if (type === 'series') {
-    url = `${h}/series/${u}/${p}/${id}.mkv`;
-  } else {
-    const ext = item.container_extension||'mp4';
-    url = `${h}/movie/${u}/${p}/${id}.${ext}`;
+  const name = item.name || item.title || '';
+
+  if (type === 'series') {
+    // Series → show episode picker
+    openEpisodePicker(item);
+    return;
   }
-  playStream(url, item.name||item.title||'');
+  if (type === 'live') {
+    const url = buildStreamUrl(item, 'live');
+    if (!url) { showToast('⚠ الرابط غير متاح'); return; }
+    playStream(url, name);
+    return;
+  }
+  // movie
+  const url = buildStreamUrl(item, 'movie');
+  if (!url) { showToast('⚠ الرابط غير متاح'); return; }
+  playStream(url, name);
+}
+
+// ── Episode Picker for Series ─────────────────────────────
+async function openEpisodePicker(series) {
+  const srv = getSrv();
+  const h   = (srv.host||'').replace(/\/$/, '');
+  const u   = srv.username||'';
+  const p   = srv.password||'';
+  const sid = series.series_id || series.stream_id || series.id || '';
+  const name = series.name || series.title || 'مسلسل';
+
+  // Create episode overlay
+  let epOverlay = document.getElementById('ep-overlay');
+  if (!epOverlay) {
+    epOverlay = document.createElement('div');
+    epOverlay.id = 'ep-overlay';
+    epOverlay.style.cssText = `
+      position:fixed;inset:0;z-index:7000;
+      background:var(--bg);display:flex;flex-direction:column;`;
+    document.body.appendChild(epOverlay);
+  }
+  epOverlay.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;
+      padding:calc(env(safe-area-inset-top,0px)+12px) 16px 12px;
+      border-bottom:1px solid var(--bdr);flex-shrink:0;background:var(--bg);">
+      <button onclick="document.getElementById('ep-overlay').style.display='none'"
+        style="background:var(--surface);border:1px solid var(--bdr);border-radius:8px;
+        color:var(--tx);padding:8px 14px;font-family:'Cairo',sans-serif;cursor:pointer;font-size:13px;">
+        ← رجوع
+      </button>
+      <div style="font-size:15px;font-weight:800;flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${name}</div>
+    </div>
+    <div id="ep-body" style="flex:1;overflow-y:auto;padding:16px;">
+      <div style="text-align:center;padding:40px;color:var(--t3);">
+        <div style="font-size:32px;margin-bottom:12px;">⏳</div>
+        جاري تحميل الحلقات...
+      </div>
+    </div>`;
+  epOverlay.style.display = 'flex';
+
+  // Fetch series info with episodes
+  try {
+    const res  = await fetch(`${h}/player_api.php?username=${u}&password=${p}&action=get_series_info&series_id=${sid}`);
+    const data = await res.json();
+    renderEpisodes(data, series, name, h, u, p);
+  } catch(e) {
+    document.getElementById('ep-body').innerHTML = `
+      <div style="text-align:center;padding:40px;color:var(--t3);">
+        <div style="font-size:40px;margin-bottom:12px;">⚠️</div>
+        تعذّر تحميل الحلقات<br>
+        <button onclick="openEpisodePicker(${JSON.stringify(series).replace(/"/g,'&quot;')})"
+          style="margin-top:16px;padding:10px 20px;border-radius:10px;
+          background:var(--gold);color:#000;border:none;font-family:'Cairo',sans-serif;
+          font-size:13px;font-weight:700;cursor:pointer;">
+          إعادة المحاولة
+        </button>
+      </div>`;
+  }
+}
+
+function renderEpisodes(data, series, name, h, u, p) {
+  const epBody = document.getElementById('ep-body');
+  if (!epBody) return;
+
+  const episodes = data.episodes || {};
+  const seasons  = Object.keys(episodes).sort((a,b) => parseInt(a)-parseInt(b));
+  const info     = data.info || {};
+  const cover    = info.cover || series.stream_icon || series.cover || '';
+
+  if (!seasons.length) {
+    epBody.innerHTML = `<div style="text-align:center;padding:40px;color:var(--t3);">لا توجد حلقات متاحة</div>`;
+    return;
+  }
+
+  let html = '';
+
+  // Series header
+  if (cover) {
+    html += `<div style="display:flex;gap:14px;margin-bottom:20px;align-items:flex-start;">
+      <img src="${cover}" style="width:80px;border-radius:10px;flex-shrink:0;object-fit:cover;" onerror="this.remove()">
+      <div style="flex:1;">
+        <div style="font-size:15px;font-weight:800;margin-bottom:4px;">${name}</div>
+        ${info.plot ? `<div style="font-size:12px;color:var(--t2);line-height:1.6;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">${info.plot}</div>` : ''}
+        <div style="font-size:11px;color:var(--t3);margin-top:4px;">${seasons.length} موسم · ${Object.values(episodes).flat().length} حلقة</div>
+      </div>
+    </div>`;
+  }
+
+  // Seasons tabs
+  html += `<div id="seasons-tabs" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;margin-bottom:14px;scrollbar-width:none;">`;
+  seasons.forEach((s, i) => {
+    html += `<button class="season-tab${i===0?' active':''}" data-season="${s}"
+      onclick="switchSeason('${s}')"
+      style="flex-shrink:0;padding:8px 16px;border-radius:20px;border:1px solid var(--bdr);
+      background:${i===0?'var(--gold)':'var(--surface)'};
+      color:${i===0?'#000':'var(--t2)'};
+      font-size:12px;font-weight:700;font-family:'Cairo',sans-serif;cursor:pointer;
+      transition:.2s;">
+      الموسم ${s}
+    </button>`;
+  });
+  html += '</div>';
+
+  // Episodes for each season (hidden except first)
+  seasons.forEach((s, si) => {
+    const eps = episodes[s] || [];
+    html += `<div class="season-eps" id="season-${s}" style="display:${si===0?'block':'none'};">`;
+    html += `<div style="display:flex;flex-direction:column;gap:2px;">`;
+    eps.forEach(ep => {
+      const epId    = ep.id || '';
+      const epNum   = ep.episode_num || ep.episode || '';
+      const epTitle = ep.title || `الحلقة ${epNum}`;
+      const epDur   = ep.info?.duration || '';
+      const epThumb = ep.info?.movie_image || ep.info?.cover_big || '';
+      const ext     = ep.container_extension || 'mkv';
+      const epUrl   = `${h}/series/${u}/${p}/${epId}.${ext}`;
+      html += `
+        <div onclick="playStream('${epUrl}', '${name} — الحلقة ${epNum}')"
+          style="display:flex;align-items:center;gap:12px;padding:12px;
+          border-radius:12px;cursor:pointer;transition:.15s;
+          background:var(--surface);border:1px solid var(--bdr);margin-bottom:6px;"
+          onmouseover="this.style.background='var(--card)'" onmouseout="this.style.background='var(--surface)'">
+          ${epThumb
+            ? `<img src="${epThumb}" style="width:90px;height:54px;border-radius:8px;object-fit:cover;flex-shrink:0;" onerror="this.remove()">`
+            : `<div style="width:90px;height:54px;border-radius:8px;background:var(--bg3);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:22px;">▶</div>`}
+          <div style="flex:1;overflow:hidden;">
+            <div style="font-size:13px;font-weight:700;margin-bottom:3px;">الحلقة ${epNum}</div>
+            <div style="font-size:11px;color:var(--t2);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${epTitle}</div>
+            ${epDur ? `<div style="font-size:10px;color:var(--t3);margin-top:2px;">${epDur}</div>` : ''}
+          </div>
+          <svg style="flex-shrink:0;" width="20" height="20" viewBox="0 0 24 24" fill="var(--gold)"><circle cx="12" cy="12" r="11" fill="rgba(245,197,24,.15)"/><polygon points="10,8 17,12 10,16"/></svg>
+        </div>`;
+    });
+    html += `</div></div>`;
+  });
+
+  epBody.innerHTML = html;
+}
+
+function switchSeason(s) {
+  // Hide all seasons
+  document.querySelectorAll('.season-eps').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.season-tab').forEach(btn => {
+    btn.style.background = 'var(--surface)';
+    btn.style.color = 'var(--t2)';
+  });
+  // Show selected
+  const epEl  = document.getElementById('season-' + s);
+  const tabEl = document.querySelector(`.season-tab[data-season="${s}"]`);
+  if (epEl)  epEl.style.display = 'block';
+  if (tabEl) { tabEl.style.background = 'var(--gold)'; tabEl.style.color = '#000'; }
 }
 
 // ── Subscription Logic ────────────────────────────────────

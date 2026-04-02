@@ -1149,10 +1149,10 @@ function playStream(url, title) {
   if (!overlay) {
     overlay = document.createElement('div');
     overlay.id = 'player-overlay';
-    overlay.style.cssText = \`
+    overlay.style.cssText = `
       position:fixed;inset:0;z-index:8000;background:#000;
-      display:flex;flex-direction:column;\`;
-    overlay.innerHTML = \`
+      display:flex;flex-direction:column;`;
+    overlay.innerHTML = `
       <div id="player-topbar" style="
         display:flex;align-items:center;gap:12px;
         padding:calc(var(--safe-top,0px)+10px) 16px 10px;
@@ -1174,7 +1174,7 @@ function playStream(url, title) {
         position:absolute;bottom:60px;left:50%;transform:translateX(-50%);
         background:rgba(0,0,0,.8);color:#fff;padding:8px 16px;
         border-radius:8px;font-size:13px;display:none;
-      "></div>\`;
+      "></div>`;
     document.body.appendChild(overlay);
   }
 
@@ -2058,7 +2058,7 @@ function renderSeriesPage() {
   }
 
   // Build category filter
-  let filterHtml = '<button class="series-cat-btn' + (seriesActiveCat==='all'?' on':'') + '" onclick="setSeriesCat(\'all\')">الكل</button>';
+  let filterHtml = `<button class="series-cat-btn${seriesActiveCat==='all'?' on':''}" onclick="setSeriesCat('all')">الكل</button>`;
   APP.sCats.slice(0,12).forEach(cat => {
     const id = cat.category_id||cat.id||'';
     const nm = cat.category_name||cat.name||'';

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <base href="/">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+  <!--
+    ✅ HTTPS FIX — يحوّل كل طلبات http إلى https تلقائياً
+    يحل مشكلة Mixed Content على الويب وويندوز WebView
+  -->
+  <meta http-equiv="Content-Security-Policy"
+        content="
+          upgrade-insecure-requests;
+          default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval';
+          media-src   'self' https: blob:;
+          img-src     'self' https: data: blob:;
+          connect-src 'self' https: wss:;
+          font-src    'self' https: data:;
+          worker-src  'self' blob:;
+        ">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+  <title>TOTV+ — بث مباشر وأفلام ومسلسلات</title>
+  <meta name="description" content="TOTV+ تطبيق البث الاحترافي — أفلام، مسلسلات، رياضة وقنوات مباشرة بجودة عالية">
+  <meta name="keywords"    content="TOTV,بث مباشر,أفلام,مسلسلات,رياضة,IPTV">
+  <meta name="author"      content="TOTV+ Team">
+  <meta name="theme-color" content="#000000">
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="mobile-web-app-capable"           content="yes">
+  <meta name="apple-mobile-web-app-capable"     content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title"       content="TOTV+">
+
+  <!-- Icons -->
+  <link rel="icon"             type="image/png" sizes="32x32"   href="icons/Icon-32.png">
+  <link rel="icon"             type="image/png" sizes="16x16"   href="icons/Icon-16.png">
+  <link rel="apple-touch-icon" sizes="180x180"                  href="icons/Icon-180.png">
+  <link rel="icon"             type="image/png" sizes="192x192" href="icons/Icon-192.png">
+  <link rel="icon"             type="image/png" sizes="512x512" href="icons/Icon-512.png">
+
+  <!-- Open Graph -->
+  <meta property="og:title"       content="TOTV+ Premium Streaming">
+  <meta property="og:description" content="بث مباشر وأفلام ومسلسلات بأعلى جودة">
+  <meta property="og:image"       content="icons/Icon-512.png">
+  <meta property="og:type"        content="website">
+
+  <!-- Preconnect -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://api.themoviedb.org">
+  <link rel="preconnect" href="https://image.tmdb.org">
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background-color: #000000; overflow: hidden; font-family: 'Cairo', sans-serif; }
+    #splash {
+      position: fixed; inset: 0; background: #000;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 9999; transition: opacity 0.4s ease;
+    }
+    #splash.fade-out { opacity: 0; pointer-events: none; }
+    #splash-title {
+      font-family: 'Cinzel Decorative', 'Georgia', serif;
+      font-size: clamp(28px, 8vw, 52px); font-weight: 900; letter-spacing: 10px;
+      background: linear-gradient(135deg, #FFD740, #F5C518, #FFAB00);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      animation: fadeUp 0.7s ease forwards;
+    }
+    #splash-bar {
+      margin-top: 32px; width: clamp(120px, 30vw, 200px);
+      height: 2px; background: #1a1a1a; border-radius: 1px; overflow: hidden;
+    }
+    #splash-bar-fill {
+      height: 100%; width: 0;
+      background: linear-gradient(90deg, #FFD740, #F5C518);
+      border-radius: 1px; animation: loadBar 1.8s ease forwards;
+    }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes loadBar { 0% { width: 0%; } 60% { width: 70%; } 100% { width: 100%; } }
+    flt-glass-pane { background: #000 !important; }
+  </style>
+
+  <link rel="preload" as="style"
+    href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&display=swap">
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&display=swap">
+</head>
+
+<body>
+  <div id="splash">
+    <div id="splash-title">TOTV+</div>
+    <div id="splash-bar"><div id="splash-bar-fill"></div></div>
+  </div>
+
+  <script>
+    // ✅ HTTPS Upgrade — يحوّل كل fetch/XHR من http إلى https
+    // يحل مشكلة Mixed Content على الويب وWindows WebView
+    (function() {
+      const _fetch = window.fetch;
+      window.fetch = function(input, init) {
+        if (typeof input === 'string' && input.startsWith('http://')) {
+          input = input.replace('http://', 'https://');
+        } else if (input instanceof Request && input.url.startsWith('http://')) {
+          input = new Request(input.url.replace('http://', 'https://'), input);
+        }
+        return _fetch.call(this, input, init);
+      };
+
+      // XMLHttpRequest override
+      const _open = XMLHttpRequest.prototype.open;
+      XMLHttpRequest.prototype.open = function(method, url, ...rest) {
+        if (typeof url === 'string' && url.startsWith('http://')) {
+          url = url.replace('http://', 'https://');
+        }
+        return _open.call(this, method, url, ...rest);
+      };
+    })();
+
+    // إخفاء Splash عند جهوزية Flutter
+    window.addEventListener('flutter-first-frame', function() {
+      const splash = document.getElementById('splash');
+      if (splash) { splash.classList.add('fade-out'); setTimeout(() => splash.remove(), 450); }
+    });
+
+    // PWA Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('flutter_service_worker.js', { scope: './' })
+          .catch(function(err) { console.log('SW failed:', err); });
+      });
+    }
+  </script>
+
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

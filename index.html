@@ -1,0 +1,2798 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<base href="/">
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<!-- ═══════════════════════════════════════════
+     HTTP ENFORCEMENT — Redirect https → http
+     and fix domain to totv.online
+     ═══════════════════════════════════════════ -->
+<script>
+(function(){
+  var loc = window.location;
+  var correctHost = 'totv.online';
+  var needsRedirect = false;
+  var newProto = loc.protocol;
+  var newHost  = loc.host;
+
+  // Force HTTP only (no HTTPS)
+  if (loc.protocol === 'https:') {
+    newProto = 'http:';
+    needsRedirect = true;
+  }
+  // Force correct domain
+  if (loc.hostname !== correctHost) {
+    newHost = correctHost;
+    needsRedirect = true;
+  }
+
+  if (needsRedirect) {
+    var newUrl = newProto + '//' + newHost + loc.pathname + loc.search + loc.hash;
+    // Show user-friendly notice before redirect
+    document.write('<div style="position:fixed;inset:0;background:#050505;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;font-family:Cairo,sans-serif;color:#fff;gap:16px;">'
+      + '<div style="font-size:28px;font-weight:900;letter-spacing:8px;background:linear-gradient(135deg,#FFD740,#FFAB00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">TOTV+</div>'
+      + '<div style="font-size:14px;color:#aaa;">جارٍ تحويلك إلى <span style="color:#FFD740;">http://totv.online</span></div>'
+      + '<div style="width:160px;height:2px;background:#222;border-radius:1px;overflow:hidden;"><div style="width:0;height:100%;background:linear-gradient(90deg,#FFD740,#FFAB00);animation:ld 1.2s ease forwards;border-radius:1px;"></div></div>'
+      + '<style>@keyframes ld{0%{width:0}100%{width:100%}}</style>'
+      + '</div>');
+    setTimeout(function(){ window.location.replace(newUrl); }, 1200);
+    return;
+  }
+})();
+</script>
+<meta name="apple-mobile-web-app-title" content="TOTV+">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="description" content="TOTV+ — بث مباشر احترافي، أفلام، مسلسلات، رياضة وقنوات عربية وعالمية">
+<meta name="keywords" content="TOTV,بث مباشر,أفلام,مسلسلات,رياضة,IPTV,قنوات">
+<meta property="og:title" content="TOTV+ Premium Streaming">
+<meta property="og:description" content="منصة البث الاحترافية — أفلام ومسلسلات وقنوات مباشرة بجودة 4K">
+<meta property="og:image" content="icons/Icon-512.png">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://totv.app/">
+<title>TOTV+ — البث الاحترافي</title>
+
+<!-- PWA Manifest -->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/Icon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/Icon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/Icon-180.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icons/Icon-192.png">
+<link rel="apple-touch-startup-image" href="icons/Icon-512.png">
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Cinzel:wght@700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+<!-- Firebase SDK — single load -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<style>
+/* ══════════════════════════════════════════════
+   DESIGN SYSTEM — TOTV+ Premium Dark Theme
+   ══════════════════════════════════════════════ */
+:root {
+  --bg:       #050505;
+  --bg2:      #0a0a0a;
+  --bg3:      #111111;
+  --surface:  #141414;
+  --card:     #1a1a1a;
+  --bdr:      #2a2a2a;
+  --bdr2:     #333;
+  --tx:       #f0f0f0;
+  --t2:       #b3b3b3;
+  --t3:       #666;
+  --gold:     #F5C518;
+  --gold2:    #FFD740;
+  --gold3:    #FFAB00;
+  --goldbg:   rgba(245,197,24,.08);
+  --live:     #E53935;
+  --grn:      #4CAF50;
+  --blu:      #2196F3;
+  --tg:       #229ED9;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bot: env(safe-area-inset-bottom, 0px);
+}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Cairo',sans-serif;color:var(--tx)}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:2px}
+
+/* ══════════════════════════════════════════════
+   SPLASH SCREEN
+   ══════════════════════════════════════════════ */
+#splash{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--bg);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:0;
+  transition:opacity .5s ease, transform .5s ease;
+}
+#splash.out{opacity:0;pointer-events:none}
+.splash-logo{
+  font-family:'Cinzel',serif;
+  font-size:clamp(36px,10vw,64px);
+  font-weight:900;letter-spacing:12px;
+  background:linear-gradient(135deg,#FFD740,#F5C518,#FFAB00);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  animation:sIn .8s cubic-bezier(.16,1,.3,1) forwards;
+  filter:drop-shadow(0 0 40px rgba(245,197,24,.3));
+}
+.splash-sub{
+  margin-top:8px;font-size:11px;letter-spacing:.35em;
+  color:var(--t3);text-transform:uppercase;
+  animation:sIn .8s .2s cubic-bezier(.16,1,.3,1) both;
+}
+.splash-bar{
+  margin-top:40px;width:clamp(100px,25vw,160px);
+  height:2px;background:var(--surface);border-radius:1px;overflow:hidden;
+  animation:sIn .8s .1s both;
+}
+.splash-bar-fill{
+  height:100%;width:0;
+  background:linear-gradient(90deg,#FFD740,#FFAB00);
+  border-radius:1px;
+  animation:fillBar 2s .3s cubic-bezier(.4,0,.2,1) forwards;
+}
+@keyframes sIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+@keyframes fillBar{0%{width:0}60%{width:72%}100%{width:100%}}
+
+/* ══════════════════════════════════════════════
+   LOGIN / SIGNUP
+   ══════════════════════════════════════════════ */
+#auth-screen{
+  position:fixed;inset:0;z-index:900;
+  display:none;align-items:center;justify-content:center;
+  background:var(--bg);
+  background-image:
+    radial-gradient(ellipse 70% 50% at 50% -5%, rgba(245,197,24,.07) 0%, transparent 70%),
+    repeating-linear-gradient(0deg,transparent,transparent 59px,rgba(255,255,255,.012) 60px),
+    repeating-linear-gradient(90deg,transparent,transparent 59px,rgba(255,255,255,.012) 60px);
+  padding:20px;overflow-y:auto;
+}
+#auth-screen.show{display:flex}
+.auth-box{
+  width:100%;max-width:400px;
+  animation:sIn .5s cubic-bezier(.16,1,.3,1);
+}
+.auth-logo{text-align:center;margin-bottom:28px}
+.auth-logo .mark{
+  font-family:'Cinzel',serif;font-size:32px;font-weight:900;
+  letter-spacing:8px;color:var(--gold);
+  filter:drop-shadow(0 0 20px rgba(245,197,24,.3));
+}
+.auth-logo .tagline{font-size:11px;color:var(--t3);letter-spacing:.2em;margin-top:4px}
+.auth-card{
+  background:var(--surface);
+  border:1px solid var(--bdr);border-radius:18px;
+  padding:28px 24px;
+  box-shadow:0 32px 80px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.04);
+}
+.auth-tabs{display:flex;gap:0;margin-bottom:24px;background:var(--bg3);border-radius:10px;padding:3px}
+.auth-tab{
+  flex:1;padding:9px;text-align:center;font-size:13px;font-weight:600;
+  cursor:pointer;border-radius:8px;transition:.2s;color:var(--t3);font-family:'Cairo',sans-serif;
+}
+.auth-tab.on{background:var(--card);color:var(--gold);box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.fg{margin-bottom:16px}
+.fg label{display:block;font-size:11px;color:var(--t3);margin-bottom:6px;letter-spacing:.06em;font-weight:600}
+.fg input{
+  width:100%;background:var(--bg3);border:1px solid var(--bdr);border-radius:10px;
+  color:var(--tx);padding:12px 14px;font-size:14px;font-family:'Cairo',sans-serif;
+  outline:none;transition:.2s;direction:ltr;
+}
+.fg input:focus{border-color:rgba(245,197,24,.5);box-shadow:0 0 0 3px rgba(245,197,24,.08)}
+.fg input::placeholder{color:var(--t3)}
+.auth-btn{
+  width:100%;padding:14px;margin-top:4px;
+  background:linear-gradient(135deg,var(--gold2),var(--gold3));
+  color:#000;font-size:14px;font-weight:800;font-family:'Cairo',sans-serif;
+  border:none;border-radius:12px;cursor:pointer;
+  transition:opacity .2s,transform .1s,box-shadow .2s;
+  box-shadow:0 4px 20px rgba(245,197,24,.3);
+}
+.auth-btn:hover{opacity:.92;box-shadow:0 6px 28px rgba(245,197,24,.4)}
+.auth-btn:active{transform:scale(.98)}
+.auth-btn:disabled{opacity:.5;cursor:not-allowed}
+.auth-or{
+  text-align:center;margin:20px 0 16px;
+  font-size:11px;color:var(--t3);position:relative;
+}
+.auth-or::before,.auth-or::after{
+  content:'';position:absolute;top:50%;width:38%;height:1px;background:var(--bdr);
+}
+.auth-or::before{right:0}.auth-or::after{left:0}
+.guest-btn{
+  width:100%;padding:12px;
+  background:transparent;border:1px solid var(--bdr);border-radius:12px;
+  color:var(--t2);font-size:13px;font-family:'Cairo',sans-serif;
+  cursor:pointer;transition:.2s;font-weight:600;
+}
+.guest-btn:hover{border-color:var(--bdr2);color:var(--tx)}
+.auth-err{font-size:11px;color:var(--live);text-align:center;margin-top:10px;min-height:16px}
+.auth-links{text-align:center;margin-top:14px}
+.auth-links a{font-size:11px;color:var(--t3);cursor:pointer;transition:.15s}
+.auth-links a:hover{color:var(--gold)}
+
+/* ══════════════════════════════════════════════
+   MAIN APP
+   ══════════════════════════════════════════════ */
+#app{display:none;height:100%;flex-direction:column}
+#app.show{display:flex}
+
+/* ── Top Bar ── */
+.topbar{
+  display:flex;align-items:center;gap:10px;
+  padding:calc(var(--safe-top) + 12px) 16px 12px;
+  background:linear-gradient(to bottom,rgba(5,5,5,.98),rgba(5,5,5,.7));
+  position:sticky;top:0;z-index:100;
+  border-bottom:1px solid rgba(255,255,255,.04);
+  flex-shrink:0;
+}
+.topbar-logo{
+  font-family:'Cinzel',serif;font-size:18px;font-weight:900;
+  color:var(--gold);letter-spacing:4px;
+  filter:drop-shadow(0 0 10px rgba(245,197,24,.25));
+  flex-shrink:0;
+}
+.topbar-search{
+  flex:1;display:flex;align-items:center;gap:8px;
+  background:var(--surface);border:1px solid var(--bdr);border-radius:10px;
+  padding:8px 12px;cursor:text;transition:.2s;
+}
+.topbar-search:focus-within{border-color:rgba(245,197,24,.4)}
+.topbar-search input{
+  flex:1;background:none;border:none;color:var(--tx);
+  font-size:13px;font-family:'Cairo',sans-serif;outline:none;
+}
+.topbar-search input::placeholder{color:var(--t3)}
+.topbar-search svg{flex-shrink:0;opacity:.4}
+.topbar-avatar{
+  width:34px;height:34px;border-radius:50%;
+  background:var(--surface);border:1.5px solid var(--bdr);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;overflow:hidden;flex-shrink:0;transition:.2s;
+}
+.topbar-avatar:hover{border-color:var(--gold)}
+.topbar-avatar img{width:100%;height:100%;object-fit:cover}
+
+/* ── Content Area ── */
+.content{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+
+/* ── Bottom Nav ── */
+.bottom-nav{
+  display:flex;align-items:stretch;
+  background:rgba(10,10,10,.97);
+  border-top:1px solid var(--bdr);
+  padding-bottom:var(--safe-bot);
+  flex-shrink:0;
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+}
+.nav-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:4px;padding:10px 4px;cursor:pointer;transition:.2s;
+  position:relative;color:var(--t3);
+}
+.nav-item.on{color:var(--gold)}
+.nav-item svg{width:22px;height:22px;transition:.2s}
+.nav-item.on svg{filter:drop-shadow(0 0 6px rgba(245,197,24,.5))}
+.nav-item span{font-size:9px;font-weight:600;letter-spacing:.04em}
+.nav-dot{
+  position:absolute;top:8px;right:calc(50% - 14px);
+  width:6px;height:6px;border-radius:50%;
+  background:var(--live);border:1.5px solid var(--bg2);
+  animation:pulse 2s infinite;
+}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.3)}}
+
+/* ══════════════════════════════════════════════
+   PAGES
+   ══════════════════════════════════════════════ */
+.page{display:none;height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.page.on{display:block}
+
+/* ── Section Header ── */
+.sec-hdr{
+  display:flex;align-items:center;gap:8px;
+  padding:20px 16px 12px;
+}
+.sec-hdr-bar{width:3px;height:18px;background:var(--gold);border-radius:2px;flex-shrink:0}
+.sec-hdr-title{font-size:16px;font-weight:800;flex:1}
+.sec-hdr-more{
+  font-size:11px;color:var(--gold);cursor:pointer;font-weight:700;
+  padding:4px 8px;border-radius:6px;transition:.15s;
+}
+.sec-hdr-more:hover{background:var(--goldbg)}
+
+/* ── Hero Carousel ── */
+.hero-wrap{position:relative;height:clamp(260px,55vw,380px);overflow:hidden;flex-shrink:0}
+.hero-slide{
+  position:absolute;inset:0;opacity:0;transition:opacity .6s ease;
+}
+.hero-slide.on{opacity:1}
+.hero-bg{
+  position:absolute;inset:0;background-size:cover;background-position:center;
+  transform:scale(1.05);transition:transform 8s ease;
+}
+.hero-slide.on .hero-bg{transform:scale(1)}
+.hero-overlay{
+  position:absolute;inset:0;
+  background:linear-gradient(to top,#050505 0%,rgba(5,5,5,.6) 40%,rgba(5,5,5,.1) 70%,transparent 100%);
+}
+.hero-overlay2{
+  position:absolute;inset:0;
+  background:linear-gradient(to right,rgba(5,5,5,.7) 0%,transparent 60%);
+}
+.hero-content{
+  position:absolute;bottom:0;right:0;left:0;padding:20px 16px;
+}
+.hero-tags{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.hero-tag{
+  font-size:9px;font-weight:700;letter-spacing:.1em;
+  padding:3px 8px;border-radius:4px;border:1px solid;
+}
+.hero-tag.live{background:rgba(229,57,53,.15);border-color:var(--live);color:var(--live)}
+.hero-tag.gold{background:var(--goldbg);border-color:rgba(245,197,24,.4);color:var(--gold)}
+.hero-tag.new{background:rgba(33,150,243,.1);border-color:rgba(33,150,243,.4);color:var(--blu)}
+.hero-title{
+  font-size:clamp(18px,5vw,26px);font-weight:900;line-height:1.15;
+  margin-bottom:6px;text-shadow:0 2px 20px rgba(0,0,0,.8);
+}
+.hero-meta{font-size:11px;color:var(--t2);margin-bottom:14px}
+.hero-btns{display:flex;gap:8px}
+.hero-play{
+  display:flex;align-items:center;gap:6px;
+  padding:10px 20px;border-radius:10px;border:none;cursor:pointer;
+  font-size:13px;font-weight:800;font-family:'Cairo',sans-serif;
+  background:linear-gradient(135deg,var(--gold2),var(--gold3));color:#000;
+  transition:.2s;box-shadow:0 4px 16px rgba(245,197,24,.35);
+}
+.hero-play:active{transform:scale(.97)}
+.hero-info-btn{
+  display:flex;align-items:center;gap:6px;
+  padding:10px 16px;border-radius:10px;cursor:pointer;
+  font-size:13px;font-weight:700;font-family:'Cairo',sans-serif;
+  background:rgba(255,255,255,.12);color:var(--tx);border:1px solid rgba(255,255,255,.15);
+  transition:.2s;
+}
+.hero-dots{
+  display:flex;gap:5px;justify-content:center;
+  position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
+}
+.hero-dot{
+  width:5px;height:5px;border-radius:50%;
+  background:rgba(255,255,255,.3);transition:.3s;
+}
+.hero-dot.on{width:16px;border-radius:3px;background:var(--gold)}
+/* Guest play → subscribe button */
+.hero-play.subscribe{
+  background:linear-gradient(135deg,var(--gold2),var(--gold3));
+}
+
+/* ── Horizontal Scroll Row ── */
+.h-row{
+  display:flex;gap:10px;overflow-x:auto;
+  padding:0 16px 16px;scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch;
+}
+.h-row::-webkit-scrollbar{display:none}
+
+/* ── Movie Card (portrait 2:3) ── */
+.card-p{
+  flex-shrink:0;width:110px;scroll-snap-align:start;cursor:pointer;
+}
+.card-p-img{
+  width:110px;height:160px;border-radius:10px;overflow:hidden;
+  background:var(--surface);position:relative;
+  box-shadow:0 4px 16px rgba(0,0,0,.5);transition:.2s;
+}
+.card-p:active .card-p-img{transform:scale(.96)}
+.card-p-img img{width:100%;height:100%;object-fit:cover;display:block}
+.card-p-img .no-img{
+  width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  font-size:11px;color:var(--t3);text-align:center;padding:8px;
+}
+.card-p-badge{
+  position:absolute;top:5px;right:5px;
+  font-size:8px;font-weight:700;padding:2px 6px;border-radius:4px;
+}
+.card-p-badge.new{background:var(--gold);color:#000}
+.card-p-badge.live{background:var(--live);color:#fff}
+.card-p-badge.sub{background:rgba(245,197,24,.9);color:#000}
+.card-p-progress{
+  position:absolute;bottom:0;left:0;right:0;height:3px;
+  background:rgba(255,255,255,.15);
+}
+.card-p-progress-fill{height:100%;background:var(--gold);border-radius:2px}
+.card-p-name{
+  font-size:11px;font-weight:600;margin-top:6px;
+  color:var(--tx);line-height:1.3;
+  overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+}
+
+/* ── Landscape Card ── */
+.card-l{
+  flex-shrink:0;width:200px;scroll-snap-align:start;cursor:pointer;
+}
+.card-l-img{
+  width:200px;height:112px;border-radius:10px;overflow:hidden;
+  background:var(--surface);position:relative;
+  box-shadow:0 4px 16px rgba(0,0,0,.5);transition:.2s;
+}
+.card-l:active .card-l-img{transform:scale(.97)}
+.card-l-img img{width:100%;height:100%;object-fit:cover}
+.card-l-name{font-size:12px;font-weight:600;margin-top:6px;color:var(--tx)}
+.card-l-meta{font-size:10px;color:var(--t3);margin-top:2px}
+
+/* ── Live Channel Card ── */
+.card-ch{
+  flex-shrink:0;width:96px;scroll-snap-align:start;cursor:pointer;
+}
+.card-ch-img{
+  width:96px;height:96px;border-radius:10px;overflow:hidden;
+  background:var(--surface);display:flex;align-items:center;justify-content:center;
+  position:relative;box-shadow:0 4px 12px rgba(0,0,0,.5);transition:.2s;
+  border:1px solid var(--bdr);
+}
+.card-ch:active .card-ch-img{transform:scale(.95)}
+.card-ch-img img{width:80%;height:80%;object-fit:contain}
+.live-badge{
+  position:absolute;bottom:5px;right:5px;left:5px;
+  display:flex;align-items:center;gap:3px;justify-content:center;
+  background:rgba(229,57,53,.9);border-radius:4px;padding:2px 5px;
+}
+.live-dot{width:4px;height:4px;border-radius:50%;background:#fff;animation:pulse 1.5s infinite}
+.live-badge span{font-size:8px;font-weight:700;color:#fff;letter-spacing:.06em}
+.card-ch-name{font-size:10px;font-weight:600;margin-top:5px;color:var(--t2);text-align:center}
+
+/* ══════════════════════════════════════════════
+   SPORT SECTIONS
+   ══════════════════════════════════════════════ */
+.sport-league-hdr{
+  display:flex;align-items:center;gap:10px;
+  padding:14px 16px 10px;
+}
+.sport-league-emoji{font-size:18px}
+.sport-league-name{font-size:14px;font-weight:800;flex:1}
+.sport-league-count{
+  font-size:10px;color:var(--t3);
+  background:var(--surface);padding:3px 8px;border-radius:20px;
+}
+
+/* ══════════════════════════════════════════════
+   SEARCH PAGE
+   ══════════════════════════════════════════════ */
+#pg-search{padding:16px}
+.search-big{
+  display:flex;align-items:center;gap:10px;
+  background:var(--surface);border:1.5px solid var(--bdr);
+  border-radius:14px;padding:12px 16px;margin-bottom:20px;
+  transition:.2s;
+}
+.search-big:focus-within{border-color:rgba(245,197,24,.5);box-shadow:0 0 0 3px rgba(245,197,24,.06)}
+.search-big input{
+  flex:1;background:none;border:none;color:var(--tx);
+  font-size:15px;font-family:'Cairo',sans-serif;outline:none;
+}
+.search-big input::placeholder{color:var(--t3)}
+.search-cats{display:flex;gap:8px;overflow-x:auto;margin-bottom:20px;padding-bottom:4px}
+.search-cats::-webkit-scrollbar{display:none}
+.scat{
+  flex-shrink:0;padding:8px 14px;border-radius:20px;
+  font-size:12px;font-weight:600;cursor:pointer;transition:.2s;
+  background:var(--surface);color:var(--t2);border:1px solid var(--bdr);
+  font-family:'Cairo',sans-serif;
+}
+.scat.on{background:var(--gold);color:#000;border-color:var(--gold)}
+.search-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+}
+.search-empty{text-align:center;padding:60px 20px;color:var(--t3)}
+.search-empty svg{margin-bottom:16px;opacity:.3}
+.search-empty p{font-size:14px}
+
+/* ══════════════════════════════════════════════
+   PROFILE PAGE
+   ══════════════════════════════════════════════ */
+#pg-profile{overflow-y:auto;-webkit-overflow-scrolling:touch}
+.profile-header{
+  position:relative;padding:40px 20px 24px;
+  background:linear-gradient(to bottom,rgba(245,197,24,.06),transparent);
+  border-bottom:1px solid var(--bdr);
+  display:flex;flex-direction:column;align-items:center;
+  text-align:center;
+}
+.profile-avatar{
+  width:80px;height:80px;border-radius:50%;
+  background:var(--surface);border:3px solid var(--gold);
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;margin-bottom:12px;
+  box-shadow:0 0 30px rgba(245,197,24,.2);
+}
+.profile-avatar img{width:100%;height:100%;object-fit:cover}
+.profile-name{font-size:18px;font-weight:800;margin-bottom:4px}
+.profile-email{font-size:12px;color:var(--t3);margin-bottom:14px}
+.plan-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 16px;border-radius:20px;font-size:12px;font-weight:700;
+}
+.plan-badge.free{background:var(--surface);color:var(--t2);border:1px solid var(--bdr)}
+.plan-badge.premium{background:rgba(33,150,243,.12);color:var(--blu);border:1px solid rgba(33,150,243,.3)}
+.plan-badge.totv{background:var(--goldbg);color:var(--gold);border:1px solid rgba(245,197,24,.3)}
+.sub-card{
+  margin:16px 16px 0;padding:16px;border-radius:14px;
+  background:var(--surface);border:1px solid var(--bdr);
+}
+.sub-card.active{border-color:rgba(76,175,80,.3);background:rgba(76,175,80,.04)}
+.sub-card.inactive{border-color:rgba(245,197,24,.2);background:var(--goldbg)}
+.sub-card-row{display:flex;align-items:center;gap:12px}
+.sub-card-icon{
+  width:40px;height:40px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.sub-card-icon.active{background:rgba(76,175,80,.12)}
+.sub-card-icon.inactive{background:var(--goldbg)}
+.sub-card-title{font-size:14px;font-weight:700}
+.sub-card-sub{font-size:11px;color:var(--t3);margin-top:2px}
+.sub-action-btn{
+  padding:8px 16px;border-radius:10px;border:none;
+  font-size:12px;font-weight:700;font-family:'Cairo',sans-serif;cursor:pointer;
+  transition:.2s;flex-shrink:0;
+}
+.sub-action-btn.buy{background:var(--gold);color:#000}
+.sub-action-btn.renew{background:rgba(245,197,24,.1);color:var(--gold);border:1px solid rgba(245,197,24,.3)}
+.menu-section{padding:20px 16px 8px}
+.menu-section-title{font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.12em;text-transform:uppercase}
+.menu-group{
+  background:var(--surface);border-radius:14px;
+  border:1px solid var(--bdr);overflow:hidden;
+  margin-bottom:12px;
+}
+.menu-row{
+  display:flex;align-items:center;gap:12px;
+  padding:14px 16px;cursor:pointer;transition:.15s;
+  border-bottom:1px solid rgba(255,255,255,.04);
+}
+.menu-row:last-child{border-bottom:none}
+.menu-row:active{background:rgba(255,255,255,.04)}
+.menu-row-icon{
+  width:34px;height:34px;border-radius:8px;
+  background:var(--bg3);display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.menu-row-icon svg{width:16px;height:16px;color:var(--gold)}
+.menu-row-text{flex:1}
+.menu-row-title{font-size:13px;font-weight:600}
+.menu-row-sub{font-size:10px;color:var(--t3);margin-top:1px}
+.menu-badge{
+  font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;
+  background:var(--gold);color:#000;margin-right:6px;
+}
+.support-email-row{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 16px;background:rgba(34,158,217,.06);
+  border:1px solid rgba(34,158,217,.2);border-radius:10px;
+  margin:0 16px 12px;cursor:pointer;
+}
+.support-email-row svg{color:var(--tg);flex-shrink:0}
+.support-email-txt{font-size:12px;color:var(--tg);font-weight:600}
+.timer-card{
+  margin:0 16px 16px;padding:14px 16px;
+  background:var(--surface);border-radius:14px;
+  border:1px solid var(--bdr);
+}
+.timer-card.expired{border-color:rgba(229,57,53,.3);background:rgba(229,57,53,.04)}
+
+/* ══════════════════════════════════════════════
+   MODALS
+   ══════════════════════════════════════════════ */
+.modal-overlay{
+  position:fixed;inset:0;z-index:800;
+  background:rgba(0,0,0,.85);backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  display:flex;align-items:flex-end;justify-content:center;
+  opacity:0;pointer-events:none;transition:.3s;
+}
+.modal-overlay.show{opacity:1;pointer-events:all}
+.modal-sheet{
+  width:100%;max-width:480px;
+  background:var(--surface);
+  border-radius:20px 20px 0 0;
+  border:1px solid var(--bdr);border-bottom:none;
+  padding:0 0 calc(var(--safe-bot) + 20px);
+  transform:translateY(100%);transition:.35s cubic-bezier(.16,1,.3,1);
+  max-height:85vh;overflow-y:auto;
+}
+.modal-overlay.show .modal-sheet{transform:none}
+.modal-handle{
+  width:36px;height:4px;border-radius:2px;
+  background:var(--bdr2);margin:12px auto 16px;
+}
+.modal-title{
+  font-size:18px;font-weight:800;text-align:center;
+  padding:0 20px 16px;border-bottom:1px solid var(--bdr);
+}
+.modal-body{padding:20px}
+
+/* ── Subscribe Modal ── */
+.sub-modal-hero{
+  text-align:center;padding:8px 0 20px;
+}
+.sub-modal-icon{font-size:44px;margin-bottom:10px}
+.sub-modal-title{font-size:20px;font-weight:900;margin-bottom:6px}
+.sub-modal-desc{font-size:13px;color:var(--t2);line-height:1.6}
+.sub-btn{
+  width:100%;padding:16px;border-radius:14px;border:none;
+  font-size:15px;font-weight:800;font-family:'Cairo',sans-serif;
+  cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center;gap:8px;
+  margin-bottom:10px;
+}
+.sub-btn.primary{
+  background:linear-gradient(135deg,var(--gold2),var(--gold3));color:#000;
+  box-shadow:0 4px 20px rgba(245,197,24,.35);
+}
+.sub-btn.primary:hover{opacity:.92;box-shadow:0 6px 28px rgba(245,197,24,.45)}
+.sub-btn.telegram{
+  background:rgba(34,158,217,.12);color:var(--tg);
+  border:1px solid rgba(34,158,217,.3);
+}
+.sub-btn.code{
+  background:var(--bg3);color:var(--t2);
+  border:1px solid var(--bdr);font-size:14px;
+}
+.sub-email-note{
+  text-align:center;font-size:11px;color:var(--t3);
+  padding:8px 0 0;
+}
+
+/* ── Info Sheet ── */
+.info-poster{
+  width:100%;height:220px;background:var(--bg3);
+  background-size:cover;background-position:center;position:relative;
+}
+.info-poster-overlay{
+  position:absolute;inset:0;
+  background:linear-gradient(to top,var(--surface) 0%,transparent 60%);
+}
+.info-body{padding:0 16px 8px}
+.info-title{font-size:20px;font-weight:900;margin-bottom:6px}
+.info-meta{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.info-meta span{font-size:11px;color:var(--t3)}
+.info-meta .sep{color:var(--bdr2)}
+.info-overview{font-size:13px;color:var(--t2);line-height:1.7;margin-bottom:16px}
+.info-play-btn{
+  width:100%;padding:15px;border-radius:14px;border:none;
+  font-size:15px;font-weight:800;font-family:'Cairo',sans-serif;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:.2s;margin-bottom:10px;
+}
+.info-play-btn.play{
+  background:linear-gradient(135deg,#fff,#e0e0e0);color:#000;
+  box-shadow:0 4px 16px rgba(255,255,255,.2);
+}
+.info-play-btn.sub{
+  background:linear-gradient(135deg,var(--gold2),var(--gold3));color:#000;
+  box-shadow:0 4px 16px rgba(245,197,24,.35);
+}
+
+/* ── Chat Support Modal ── */
+.chat-messages{
+  height:300px;overflow-y:auto;padding:12px;
+  display:flex;flex-direction:column;gap:10px;
+  background:var(--bg3);border-radius:12px;margin-bottom:12px;
+}
+.chat-bubble{
+  max-width:80%;padding:10px 14px;border-radius:14px;
+  font-size:13px;line-height:1.55;
+}
+.chat-bubble.bot{
+  background:var(--surface);color:var(--tx);border-radius:4px 14px 14px 14px;
+  align-self:flex-end;border:1px solid var(--bdr);
+}
+.chat-bubble.user{
+  background:rgba(245,197,24,.12);color:var(--gold);
+  border-radius:14px 14px 4px 14px;align-self:flex-start;
+  border:1px solid rgba(245,197,24,.2);
+}
+.chat-input-row{display:flex;gap:8px}
+.chat-input{
+  flex:1;background:var(--bg3);border:1px solid var(--bdr);border-radius:12px;
+  color:var(--tx);padding:11px 14px;font-size:13px;font-family:'Cairo',sans-serif;
+  outline:none;transition:.2s;
+}
+.chat-input:focus{border-color:rgba(245,197,24,.4)}
+.chat-send{
+  width:42px;height:42px;border-radius:12px;border:none;
+  background:var(--gold);color:#000;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:.2s;
+}
+.chat-send:active{transform:scale(.95)}
+.chat-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.chat-chip{
+  padding:6px 12px;border-radius:20px;border:1px solid var(--bdr);
+  font-size:11px;color:var(--t2);cursor:pointer;transition:.15s;
+  font-family:'Cairo',sans-serif;background:var(--surface);
+}
+.chat-chip:hover{border-color:var(--gold);color:var(--gold)}
+
+/* ── Install Banner ── */
+#install-banner{
+  position:fixed;bottom:calc(var(--safe-bot) + 64px);left:12px;right:12px;
+  z-index:700;padding:14px 16px;
+  background:var(--surface);border:1px solid rgba(245,197,24,.3);border-radius:16px;
+  box-shadow:0 8px 32px rgba(0,0,0,.6);
+  display:none;align-items:center;gap:12px;
+  animation:sIn .4s ease;
+}
+#install-banner.show{display:flex}
+.install-icon{font-size:28px;flex-shrink:0}
+.install-text{flex:1}
+.install-title{font-size:13px;font-weight:700}
+.install-desc{font-size:11px;color:var(--t3);margin-top:1px}
+.install-btn{
+  padding:8px 14px;background:var(--gold);color:#000;
+  border:none;border-radius:8px;font-size:12px;font-weight:800;
+  cursor:pointer;font-family:'Cairo',sans-serif;flex-shrink:0;
+}
+.install-close{
+  position:absolute;top:8px;left:8px;
+  background:none;border:none;color:var(--t3);font-size:16px;cursor:pointer;
+}
+
+/* ── Toast ── */
+#toast{
+  position:fixed;bottom:calc(var(--safe-bot) + 80px);left:50%;
+  transform:translateX(-50%) translateY(20px);
+  background:var(--card);border:1px solid var(--bdr);border-radius:10px;
+  padding:10px 20px;font-size:13px;font-weight:600;
+  z-index:9000;opacity:0;pointer-events:none;transition:.3s;white-space:nowrap;
+  box-shadow:0 8px 24px rgba(0,0,0,.5);
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── Shimmer Loading ── */
+.shimmer{background:linear-gradient(90deg,var(--surface) 25%,var(--card) 50%,var(--surface) 75%);background-size:200%;animation:shimmer 1.4s infinite}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ── Maintenance Overlay ── */
+#maint-overlay{
+  position:fixed;inset:0;z-index:9500;
+  background:var(--bg);display:none;
+  align-items:center;justify-content:center;
+  flex-direction:column;gap:16px;padding:32px;text-align:center;
+}
+#maint-overlay.show{display:flex}
+.maint-icon{font-size:64px;margin-bottom:8px}
+.maint-title{font-size:22px;font-weight:900}
+.maint-msg{font-size:14px;color:var(--t2);line-height:1.7}
+
+/* ── Responsive ── */
+@media(min-width:480px){
+  .search-grid{grid-template-columns:repeat(4,1fr)}
+  .card-p{width:120px}.card-p-img{width:120px;height:175px}
+}
+@media(min-width:768px){
+  .search-grid{grid-template-columns:repeat(5,1fr)}
+  .card-ch{width:110px}.card-ch-img{width:110px;height:110px}
+}
+
+/* ══════════════════════════════════════════════
+   SERIES PAGE — Poster Grid
+   ══════════════════════════════════════════════ */
+.series-page-header{
+  position:sticky;top:0;z-index:50;
+  background:linear-gradient(to bottom,var(--bg) 80%,transparent);
+  padding:8px 0 0;
+}
+.series-filter-row{
+  display:flex;gap:8px;padding:0 16px 10px;
+  overflow-x:auto;-webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+.series-filter-row::-webkit-scrollbar{display:none}
+.series-cat-btn{
+  flex-shrink:0;padding:7px 14px;
+  border-radius:20px;border:1px solid var(--bdr);
+  background:var(--surface);color:var(--t2);
+  font-size:12px;font-weight:600;font-family:'Cairo',sans-serif;
+  cursor:pointer;transition:.2s;white-space:nowrap;
+}
+.series-cat-btn.on{
+  background:var(--gold);color:#000;border-color:var(--gold);
+}
+.series-poster-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;padding:8px 12px;
+}
+@media(min-width:480px){.series-poster-grid{grid-template-columns:repeat(4,1fr)}}
+@media(min-width:768px){.series-poster-grid{grid-template-columns:repeat(5,1fr)}}
+
+.series-poster-card{cursor:pointer;animation:sIn .3s ease both}
+.series-poster-img{
+  position:relative;
+  aspect-ratio:.67;border-radius:10px;overflow:hidden;
+  background:var(--surface);border:1px solid var(--bdr);
+  transition:transform .2s,box-shadow .2s;
+}
+.series-poster-card:active .series-poster-img{
+  transform:scale(.96);box-shadow:0 4px 20px rgba(0,0,0,.5);
+}
+.series-poster-img img{
+  width:100%;height:100%;object-fit:cover;display:block;
+}
+.series-poster-no-img{
+  width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  padding:8px;font-size:10px;color:var(--t3);text-align:center;line-height:1.4;
+}
+.series-poster-crown{
+  position:absolute;top:6px;right:6px;
+  font-size:14px;background:rgba(0,0,0,.7);
+  border-radius:6px;padding:2px 4px;
+}
+.series-poster-new{
+  position:absolute;top:6px;left:6px;
+  background:var(--gold);color:#000;
+  font-size:9px;font-weight:800;font-family:'Cairo',sans-serif;
+  padding:2px 6px;border-radius:4px;
+}
+.series-poster-info{padding:5px 2px 0}
+.series-poster-name{
+  font-size:11px;font-weight:600;color:var(--tx);
+  overflow:hidden;display:-webkit-box;
+  -webkit-line-clamp:2;-webkit-box-orient:vertical;
+  line-height:1.4;
+}
+.series-poster-meta{
+  display:flex;gap:6px;margin-top:3px;
+  font-size:10px;color:var(--t3);
+}
+.series-empty{
+  text-align:center;padding:60px 20px;color:var(--t3);
+  display:flex;flex-direction:column;align-items:center;gap:12px;
+}
+.series-empty-icon{font-size:48px}
+</style>
+</head>
+<body>
+<!-- ══ SPLASH ══ -->
+<div id="splash">
+  <div class="splash-logo">TOTV+</div>
+  <div class="splash-sub">Premium Streaming</div>
+  <div class="splash-bar"><div class="splash-bar-fill"></div></div>
+</div>
+
+<!-- ══ MAINTENANCE ══ -->
+<div id="maint-overlay">
+  <div class="maint-icon">🔧</div>
+  <div class="maint-title">تحت الصيانة</div>
+  <div class="maint-msg" id="maint-msg">التطبيق تحت الصيانة مؤقتاً، يرجى المحاولة لاحقاً</div>
+</div>
+
+<!-- ══ AUTH SCREEN ══ -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="mark">TOTV+</div>
+      <div class="tagline">Premium Streaming</div>
+    </div>
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <div class="auth-tab on" onclick="authTab('login')" id="tab-login">تسجيل الدخول</div>
+        <div class="auth-tab" onclick="authTab('signup')" id="tab-signup">إنشاء حساب</div>
+      </div>
+      <div id="form-login">
+        <div class="fg"><label>البريد الإلكتروني</label><input id="l-email" type="email" placeholder="email@example.com" autocomplete="email"></div>
+        <div class="fg"><label>كلمة المرور</label><input id="l-pass" type="password" placeholder="••••••••" autocomplete="current-password"></div>
+        <button class="auth-btn" onclick="doLogin()" id="login-btn">تسجيل الدخول</button>
+        <div class="auth-err" id="login-err"></div>
+      </div>
+      <div id="form-signup" style="display:none">
+        <div class="fg"><label>الاسم</label><input id="s-name" type="text" placeholder="اسمك الكريم" autocomplete="name"></div>
+        <div class="fg"><label>البريد الإلكتروني</label><input id="s-email" type="email" placeholder="email@example.com" autocomplete="email"></div>
+        <div class="fg"><label>كلمة المرور</label><input id="s-pass" type="password" placeholder="6 أحرف على الأقل" autocomplete="new-password"></div>
+        <button class="auth-btn" onclick="doSignup()" id="signup-btn">إنشاء الحساب</button>
+        <div class="auth-err" id="signup-err"></div>
+      </div>
+      <div class="auth-or">أو</div>
+      <button class="guest-btn" onclick="enterAsGuest()">⏱ تصفح كضيف (8 ساعات يومياً)</button>
+      <div class="auth-links">
+        <a onclick="showForgot()">نسيت كلمة المرور؟</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MAIN APP ══ -->
+<div id="app">
+
+  <!-- Top Bar -->
+  <div class="topbar">
+    <div class="topbar-logo">TOTV+</div>
+    <div class="topbar-search" onclick="focusSearch()">
+      <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input id="top-search" placeholder="بحث عن فيلم أو مسلسل..." onkeyup="onTopSearch(this.value)">
+    </div>
+    <div class="topbar-avatar" onclick="nav('profile')" id="user-avatar">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- HOME PAGE -->
+    <div class="page on" id="pg-home">
+      <!-- Hero Carousel -->
+      <div class="hero-wrap" id="hero-wrap">
+        <div class="hero-slide on" id="hero-0">
+          <div class="hero-bg shimmer" id="hero-bg-0"></div>
+          <div class="hero-overlay"></div><div class="hero-overlay2"></div>
+          <div class="hero-content">
+            <div class="hero-tags"><span class="hero-tag live">● مباشر</span><span class="hero-tag gold">TOTV+</span></div>
+            <div class="hero-title" id="hero-title-0">جاري التحميل...</div>
+            <div class="hero-meta" id="hero-meta-0"></div>
+            <div class="hero-btns">
+              <button class="hero-play" id="hero-play-0" onclick="heroPlay(0)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+                <span id="hero-play-label-0">تشغيل</span>
+              </button>
+              <button class="hero-info-btn" onclick="heroInfo(0)">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                معلومات
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="hero-dots" id="hero-dots"></div>
+      </div>
+
+      <!-- Sections injected by JS -->
+      <div id="home-sections"></div>
+      <div style="height:20px"></div>
+    </div>
+
+    <!-- LIVE PAGE -->
+    <div class="page" id="pg-live">
+      <div id="live-sections"></div>
+      <div style="height:20px"></div>
+    </div>
+
+    <!-- SEARCH PAGE -->
+    <div class="page" id="pg-search">
+      <div class="search-big">
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input id="search-input" placeholder="بحث عن فيلم، مسلسل أو قناة..." oninput="doSearch(this.value)" autofocus>
+      </div>
+      <div class="search-cats" id="search-cats">
+        <button class="scat on" data-t="all" onclick="filterType(this)">الكل</button>
+        <button class="scat" data-t="movie" onclick="filterType(this)">أفلام</button>
+        <button class="scat" data-t="series" onclick="filterType(this)">مسلسلات</button>
+        <button class="scat" data-t="live" onclick="filterType(this)">مباشر</button>
+      </div>
+      <div class="search-grid" id="search-results">
+        <div class="search-empty" style="grid-column:1/-1">
+          <svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <p>ابحث عن محتواك المفضل</p>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- SERIES PAGE -->
+    <div class="page" id="pg-series">
+      <div class="series-page-header">
+        <div class="series-filter-row" id="series-cat-filter"></div>
+      </div>
+      <div id="series-poster-grid"></div>
+      <div style="height:20px"></div>
+    </div>
+
+    <!-- PROFILE PAGE -->
+    <div class="page" id="pg-profile">
+      <div id="profile-content"></div>
+      <div style="height:30px"></div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <div class="nav-item on" id="ni-home" onclick="nav('home')">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9,22 9,12 15,12 15,22"/>
+      </svg>
+      <span>الرئيسية</span>
+    </div>
+    <div class="nav-item" id="ni-live" onclick="nav('live')">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/>
+      </svg>
+      <span>مباشر</span>
+      <div class="nav-dot"></div>
+    </div>
+    <div class="nav-item" id="ni-series" onclick="nav('series')">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="8,21 12,17 16,21"/>
+      </svg>
+      <span>مسلسلات</span>
+    </div>
+    <div class="nav-item" id="ni-search" onclick="nav('search')">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <span>بحث</span>
+    </div>
+    <div class="nav-item" id="ni-profile" onclick="nav('profile')">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+      <span>حسابي</span>
+    </div>
+  </nav>
+</div>
+
+<!-- ══ MODALS ══ -->
+
+<!-- Subscribe Modal -->
+<div class="modal-overlay" id="modal-sub" onclick="closeModal('modal-sub')">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-body">
+      <div class="sub-modal-hero">
+        <div class="sub-modal-icon">✨</div>
+        <div class="sub-modal-title">اشترك في TOTV+</div>
+        <div class="sub-modal-desc">للوصول إلى جميع القنوات والأفلام والمسلسلات بجودة عالية</div>
+      </div>
+      <button class="sub-btn primary" onclick="openTOTV()">
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5m-20-5 10 5 10-5"/></svg>
+        الموقع الرسمي — totv.app
+      </button>
+      <button class="sub-btn telegram" onclick="openBot()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248-2.046 9.634c-.154.677-.556.843-1.126.524l-3.107-2.289-1.499 1.441c-.166.166-.305.305-.625.305l.224-3.168 5.771-5.211c.251-.224-.054-.349-.389-.125L7.06 14.557l-3.045-.952c-.661-.207-.675-.661.138-.978l11.879-4.578c.55-.2 1.031.133.53.199z"/></svg>
+        @PaymentTOTVBOT
+      </button>
+      <button class="sub-btn code" onclick="closeModal('modal-sub');showActivate()">
+        🔑 أدخل كود التفعيل
+      </button>
+      <div class="sub-email-note">للاستفسار: <a href="/cdn-cgi/l/email-protection#0b7f647f7d25787e7b7b64797f4b6c666a626725686466" style="color:var(--tg)"><span class="__cf_email__" data-cfemail="e4908b9092ca979194948b9690a48389858d88ca878b89">[email&#160;protected]</span></a></div>
+    </div>
+  </div>
+</div>
+
+<!-- Info Sheet Modal -->
+<div class="modal-overlay" id="modal-info" onclick="closeModal('modal-info')">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div id="info-content"></div>
+  </div>
+</div>
+
+<!-- Activate Code Modal -->
+<div class="modal-overlay" id="modal-activate" onclick="closeModal('modal-activate')">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🔑 تفعيل الكود</div>
+    <div class="modal-body">
+      <div class="fg"><label>كود التفعيل</label>
+        <input id="act-code" type="text" placeholder="XXXX-XXXX" dir="ltr" style="font-family:'JetBrains Mono',monospace;font-size:18px;text-align:center;letter-spacing:.2em">
+      </div>
+      <button class="auth-btn" onclick="doActivate()">✓ تفعيل</button>
+      <div class="auth-err" id="act-err"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Support Chat Modal -->
+<div class="modal-overlay" id="modal-support" onclick="closeModal('modal-support')">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🤖 مساعد TOTV+</div>
+    <div class="modal-body">
+      <div class="chat-messages" id="chat-msgs"></div>
+      <div class="chat-chips" id="chat-chips">
+        <button class="chat-chip" onclick="chatSend(this.textContent)">🐌 البث بطيء</button>
+        <button class="chat-chip" onclick="chatSend(this.textContent)">💳 الأسعار</button>
+        <button class="chat-chip" onclick="chatSend(this.textContent)">🔑 تفعيل كود</button>
+        <button class="chat-chip" onclick="chatSend(this.textContent)">📞 التواصل</button>
+      </div>
+      <div class="chat-input-row">
+        <input class="chat-input" id="chat-input" placeholder="اكتب رسالتك..." onkeydown="if(event.key==='Enter')chatSend()">
+        <button class="chat-send" onclick="chatSend()">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22,2 15,22 11,13 2,9"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Install Banner -->
+<div id="install-banner">
+  <button class="install-close" onclick="document.getElementById('install-banner').classList.remove('show')">✕</button>
+  <div class="install-icon">📲</div>
+  <div class="install-text">
+    <div class="install-title">أضف TOTV+ للشاشة الرئيسية</div>
+    <div class="install-desc">تجربة أفضل كتطبيق أصلي</div>
+  </div>
+  <button class="install-btn" id="install-btn">تثبيت</button>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- ══════════════════════════════════════════════
+     JAVASCRIPT
+     ══════════════════════════════════════════════ -->
+<script>
+// ── Firebase Init ─────────────────────────────────────────
+if (!firebase.apps.length) {
+  firebase.initializeApp({
+    apiKey: 'AIzaSyCk0dSmHGQ248b-OQi44Rm2zWrfbpLBkpU',
+    authDomain: 'totvq-8e439.firebaseapp.com',
+    projectId: 'totvq-8e439',
+    storageBucket: 'totvq-8e439.firebasestorage.app',
+    messagingSenderId: '214530463737',
+    appId: '1:214530463737:web:8c45ab9fcb43807a164f28',
+    measurementId: 'G-4QLB7GVRJT',
+  });
+}
+const auth = firebase.auth();
+const db   = firebase.firestore();
+const F    = firebase.firestore.FieldValue;
+
+// ── Persist login permanently on device (never ask again) ──
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(()=>{});
+
+// ── State ──────────────────────────────────────────────────
+let APP = {
+  user:        null,
+  plan:        'premium', // always premium - all content free
+  expiry:      null,
+  heroes:      [],
+  heroIdx:     0,
+  heroTimer:   null,
+  movies:      [],
+  series:      [],
+  live:        [],
+  mCats:       [],
+  sCats:       [],
+  lCats:       [],
+  loaded:      false,
+  maintenance: false,
+  locked:      false,
+  currentPage: 'home',
+  searchType:  'all',
+  chatHistory: [],
+  activeServer: null,  // tracks the working Xtream server
+};
+
+// ══════════════════════════════════════════════
+//  IPTV PLAYER — HLS + MP4 + Live + VOD + Series
+// ══════════════════════════════════════════════
+let _hlsInstance = null;
+
+function getSrv() {
+  // Use active server, or rebuild from cache fallback
+  if (APP.activeServer) return APP.activeServer;
+  // Fallback to hardcoded server if activeServer not yet set
+  return {
+    host:     'http://silka.m3um9xplus.org:2052',
+    username: 'totv5201093051',
+    password: '17348547711072',
+  };
+}
+
+function buildStreamUrl(item, type) {
+  const srv = getSrv();
+  const h   = (srv.host||'').replace(/\/$/, '');
+  const u   = srv.username||'';
+  const p   = srv.password||'';
+  const id  = item.stream_id || item.series_id || item.id || '';
+  if (!id || !h) return '';
+  if (type === 'live') {
+    // Xtream live: try ts format (more compatible) then m3u8
+    return `${h}/live/${u}/${p}/${id}.ts`;
+  } else if (type === 'movie') {
+    const ext = item.container_extension || item.format || 'mp4';
+    return `${h}/movie/${u}/${p}/${id}.${ext}`;
+  } else if (type === 'episode') {
+    const ext = item.container_extension || item.format || 'mkv';
+    return `${h}/series/${u}/${p}/${id}.${ext}`;
+  }
+  return '';
+}
+
+function buildPlayerHTML(title) {
+  return `
+  <div style="
+    display:flex;align-items:center;gap:10px;
+    padding:calc(env(safe-area-inset-top,0px) + 10px) 14px 10px;
+    background:linear-gradient(to bottom,rgba(0,0,0,.95),transparent);
+    position:absolute;top:0;left:0;right:0;z-index:10;pointer-events:none;
+  ">
+    <button id="btn-close-player" style="
+      pointer-events:all;
+      background:rgba(255,255,255,.18);border:none;color:#fff;
+      width:38px;height:38px;border-radius:50%;font-size:20px;line-height:1;
+      cursor:pointer;flex-shrink:0;
+    ">✕</button>
+    <div id="player-title" style="
+      font-size:14px;font-weight:700;color:#fff;
+      flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+      pointer-events:none;
+    ">${title}</div>
+  </div>
+  <video id="main-video"
+    style="width:100%;height:100%;background:#000;display:block;"
+    controls playsinline webkit-playsinline
+    x-webkit-airplay="allow"
+    preload="auto"
+  ></video>
+  <div id="player-msg" style="
+    position:absolute;bottom:70px;left:50%;transform:translateX(-50%);
+    background:rgba(0,0,0,.85);color:#fff;padding:10px 18px;
+    border-radius:10px;font-size:13px;font-family:'Cairo',sans-serif;
+    white-space:nowrap;display:none;z-index:11;text-align:center;
+  "></div>`;
+}
+
+function showPlayerMsg(msg, autohide) {
+  const el = document.getElementById('player-msg');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.display = msg ? 'block' : 'none';
+  if (autohide && msg) setTimeout(() => { el.style.display = 'none'; }, 3500);
+}
+
+function destroyHls() {
+  if (_hlsInstance) { try { _hlsInstance.destroy(); } catch(e){} _hlsInstance = null; }
+}
+
+function playStream(url, title) {
+  if (!url) { showToast('⚠ الرابط غير متاح'); return; }
+
+  // Destroy any previous HLS instance
+  destroyHls();
+
+  // Create or reuse overlay
+  let overlay = document.getElementById('player-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'player-overlay';
+    overlay.style.cssText = `
+      position:fixed;inset:0;z-index:8000;
+      background:#000;display:none;flex-direction:column;`;
+    document.body.appendChild(overlay);
+  }
+  overlay.innerHTML = buildPlayerHTML(title);
+  overlay.style.display = 'flex';
+
+  // Close button
+  document.getElementById('btn-close-player').onclick = closePlayer;
+
+  const video = document.getElementById('main-video');
+  showPlayerMsg('⏳ جاري التحميل...', false);
+
+  // ── Auto-play: iOS-compatible — unmuted first, fallback muted ──
+  function doPlay() {
+    video.muted = false;
+    var playPromise = video.play();
+    if (playPromise && playPromise.then) {
+      playPromise.then(function(){
+        showPlayerMsg('', false);
+      }).catch(function() {
+        video.muted = true;
+        var p2 = video.play();
+        if (p2 && p2.then) {
+          p2.then(function(){
+            showPlayerMsg('', false);
+            setTimeout(function(){ video.muted = false; }, 300);
+          }).catch(function(){
+            showPlayerMsg('', false);
+            video.controls = true;
+          });
+        }
+      });
+    } else {
+      showPlayerMsg('', false);
+    }
+  }
+
+  // ── HLS.js loader ──
+  function startHls(src) {
+    if (!window.Hls) {
+      showPlayerMsg('⏳ تحميل المشغل...', false);
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.15/hls.min.js';
+      document.head.appendChild(s);
+      s.onload  = () => attachHls(src);
+      s.onerror = () => { showPlayerMsg('⚠ فشل تحميل المشغل', true); fallbackNative(src); };
+    } else {
+      attachHls(src);
+    }
+  }
+
+  function attachHls(src) {
+    destroyHls();
+    const hls = new Hls({
+      enableWorker:      false,
+      lowLatencyMode:    true,
+      maxBufferLength:   30,
+      maxMaxBufferLength:60,
+      liveSyncDuration:  3,
+      xhrSetup: function(xhr) {
+        xhr.withCredentials = false;
+      }
+    });
+    _hlsInstance = hls;
+    hls.loadSource(src);
+    hls.attachMedia(video);
+    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      showPlayerMsg('', false);
+      doPlay();
+    });
+    hls.on(Hls.Events.ERROR, (_, data) => {
+      if (data.fatal) {
+        switch(data.type) {
+          case Hls.ErrorTypes.NETWORK_ERROR:
+            showPlayerMsg('⚠ خطأ في الشبكة — إعادة المحاولة...', false);
+            hls.startLoad();
+            break;
+          case Hls.ErrorTypes.MEDIA_ERROR:
+            showPlayerMsg('⚠ خطأ في الوسائط — إصلاح...', false);
+            hls.recoverMediaError();
+            break;
+          default:
+            showPlayerMsg('⚠ تعذّر التشغيل', true);
+            destroyHls();
+            break;
+        }
+      }
+    });
+  }
+
+  function fallbackNative(src) {
+    video.src = src;
+    video.load();
+    doPlay();
+  }
+
+  // ── Decide playback method ──
+  const isHLS = url.includes('.m3u8') || url.includes('/live/') || url.includes('/ts');
+  const canNativeHLS = video.canPlayType('application/vnd.apple.mpegurl') !== '';
+
+  if (canNativeHLS) {
+    // Safari / iOS — native HLS, start immediately
+    video.src = url;
+    video.load();
+    showPlayerMsg('', false);
+    doPlay();
+  } else if (isHLS) {
+    // Chrome / Android — use HLS.js
+    startHls(url);
+  } else {
+    // MP4 / MKV direct
+    video.src = url;
+    video.load();
+    showPlayerMsg('', false);
+    doPlay();
+  }
+
+  // Landscape on mobile
+  try { screen.orientation.lock('landscape').catch(()=>{}); } catch(e) {}
+}
+
+function closePlayer() {
+  destroyHls();
+  const video = document.getElementById('main-video');
+  if (video) { try { video.pause(); video.src = ''; video.load(); } catch(e){} }
+  const overlay = document.getElementById('player-overlay');
+  if (overlay) overlay.style.display = 'none';
+  try { screen.orientation.unlock(); } catch(e) {}
+}
+
+
+// ── Firestore RC Listeners ─────────────────────────────────
+function startRCListeners() {
+  // remote_control
+  db.collection('app_config').doc('remote_control').onSnapshot(s => {
+    if (!s.exists) return;
+    const d = s.data();
+    APP.maintenance = d.maintenance === true;
+    APP.locked      = d.locked === true;
+    if (APP.maintenance || APP.locked) {
+      const msg = d.maint_msg || d.lock_msg || 'التطبيق تحت الصيانة مؤقتاً';
+      showMaintenance(msg);
+    } else {
+      hideMaintenance();
+    }
+  });
+
+  // admin_actions — تنفيذ أوامر الأدمن فوراً
+  db.collection('admin_actions')
+    .where('processed','==',false)
+    .orderBy('created_at','desc').limit(3)
+    .onSnapshot(snap => {
+      snap.docs.forEach(doc => {
+        const d = doc.data();
+        if (d.action === 'force_refresh') {
+          APP.loaded = false;
+          loadContent();
+        } else if (d.action === 'broadcast' && d.title) {
+          showToast('📢 ' + d.title);
+        } else if (d.action === 'ban_user') {
+          const me = auth.currentUser;
+          if (me && me.uid === d.target_uid) auth.signOut();
+        } else if (d.action === 'maintenance_on') {
+          showMaintenance(d.msg || 'التطبيق تحت الصيانة');
+        } else if (d.action === 'maintenance_off') {
+          hideMaintenance();
+        }
+      });
+    });
+
+  // notifications — admin overlay
+  db.collection('notifications')
+    .where('active','==',true)
+    .orderBy('sent_at','desc').limit(1)
+    .onSnapshot(snap => {
+      if (snap.empty) return;
+      const d = snap.docs[0].data();
+      if (d.title) showToast('🔔 ' + d.title);
+    });
+
+  // user subscription snapshot
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      db.collection('users').doc(user.uid).onSnapshot(s => {
+        if (!s.exists) return;
+        const d = s.data();
+        if (d.banned) { auth.signOut(); return; }
+        // Plan always premium — ignore Firestore plan field
+        APP.plan = 'premium';
+      });
+    }
+  });
+}
+
+// ── Maintenance ────────────────────────────────────────────
+function showMaintenance(msg) {
+  document.getElementById('maint-msg').textContent = msg;
+  document.getElementById('maint-overlay').classList.add('show');
+}
+function hideMaintenance() {
+  document.getElementById('maint-overlay').classList.remove('show');
+}
+
+// ── Splash → Auth → App ───────────────────────────────────
+window.addEventListener('load', () => {
+  // Register TOTV Smart Cache Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('totv-sw.js', {scope: '/'})
+      .then(function(reg){
+        reg.addEventListener('updatefound', function(){
+          var nw = reg.installing;
+          if (nw) nw.addEventListener('statechange', function(){
+            if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+              nw.postMessage({action:'skipWaiting'});
+            }
+          });
+        });
+      }).catch(function(){});
+  }
+
+  startRCListeners();
+
+  // Auth state
+  auth.onAuthStateChanged(user => {
+    APP.user = user;
+    hideSplash();
+    if (user) {
+      loadUserPlan(user);
+      showApp();
+    } else {
+      showAuthScreen();
+    }
+  });
+
+  // PWA Install
+  initPWA();
+
+  // Load chat from cache
+  loadChatCache();
+});
+
+function hideSplash() {
+  setTimeout(() => {
+    const s = document.getElementById('splash');
+    s.classList.add('out');
+    setTimeout(() => s.remove(), 500);
+  }, 1800);
+}
+
+// ── User Plan ──────────────────────────────────────────────
+async function loadUserPlan(user) {
+  // All content is free — no subscription check
+  APP.plan = 'premium';
+  renderProfile();
+}
+
+// ── Auth ───────────────────────────────────────────────────
+function showAuthScreen() {
+  document.getElementById('auth-screen').classList.add('show');
+  document.getElementById('app').classList.remove('show');
+}
+function showApp() {
+  document.getElementById('auth-screen').classList.remove('show');
+  document.getElementById('app').classList.add('show');
+  renderProfile();
+  // Load from cache immediately for instant display, then refresh from network
+  const cached = loadFromCache();
+  if (cached && !APP.loaded) {
+    APP.movies = cached.movies||[];
+    APP.series = cached.series||[];
+    APP.live   = cached.live||[];
+    APP.mCats  = cached.mCats||[];
+    APP.sCats  = cached.sCats||[];
+    APP.lCats  = cached.lCats||[];
+    APP.loaded = true;
+    renderHome();
+    showToast('✅ تم تحميل المحتوى');
+  }
+  // Always refresh in background
+  fetchFromNetwork().then(() => {
+    renderHome();
+    if (APP.currentPage === 'live') renderLive();
+    if (APP.currentPage === 'series') renderSeriesPage();
+  });
+}
+function authTab(t) {
+  document.getElementById('form-login').style.display   = t==='login'  ? '' : 'none';
+  document.getElementById('form-signup').style.display  = t==='signup' ? '' : 'none';
+  document.getElementById('tab-login').classList.toggle('on',  t==='login');
+  document.getElementById('tab-signup').classList.toggle('on', t==='signup');
+}
+async function doLogin() {
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('login-err');
+  const email = document.getElementById('l-email').value.trim();
+  const pass  = document.getElementById('l-pass').value;
+  if (!email||!pass) { err.textContent='يرجى ملء جميع الحقول'; return; }
+  btn.disabled = true; btn.textContent = 'جاري الدخول...'; err.textContent = '';
+  try {
+    await auth.signInWithEmailAndPassword(email, pass);
+  } catch(e) {
+    err.textContent = errMsg(e.code);
+    btn.disabled = false; btn.textContent = 'تسجيل الدخول';
+  }
+}
+async function doSignup() {
+  const btn = document.getElementById('signup-btn');
+  const err = document.getElementById('signup-err');
+  const name  = document.getElementById('s-name').value.trim();
+  const email = document.getElementById('s-email').value.trim();
+  const pass  = document.getElementById('s-pass').value;
+  if (!name||!email||!pass) { err.textContent='يرجى ملء جميع الحقول'; return; }
+  if (pass.length < 6)      { err.textContent='كلمة المرور 6 أحرف على الأقل'; return; }
+  btn.disabled = true; btn.textContent = 'جاري الإنشاء...'; err.textContent='';
+  try {
+    const cred = await auth.createUserWithEmailAndPassword(email, pass);
+    await cred.user.updateProfile({displayName: name});
+    await db.collection('users').doc(cred.user.uid).set({
+      name, email, plan:'free',
+      created_at: F.serverTimestamp()
+    }, {merge:true});
+  } catch(e) {
+    err.textContent = errMsg(e.code);
+    btn.disabled = false; btn.textContent = 'إنشاء الحساب';
+  }
+}
+function enterAsGuest() {
+  // Sign in anonymously
+  auth.signInAnonymously().catch(() => {
+    // جلسة ضيف محلية بدون Firebase
+    APP.user = {uid:'guest',isAnonymous:true,displayName:'ضيف'};
+    APP.plan = 'premium';
+    showApp();
+  });
+}
+async function showForgot() {
+  const email = prompt('أدخل بريدك الإلكتروني:');
+  if (!email) return;
+  try {
+    await auth.sendPasswordResetEmail(email);
+    alert('تم إرسال رابط إعادة تعيين كلمة المرور على بريدك');
+  } catch(e) { alert('خطأ: ' + e.message); }
+}
+function errMsg(code) {
+  const map = {
+    'auth/user-not-found':     'البريد الإلكتروني غير مسجل',
+    'auth/wrong-password':     'كلمة المرور غير صحيحة',
+    'auth/email-already-in-use':'البريد الإلكتروني مسجل مسبقاً',
+    'auth/invalid-email':      'بريد إلكتروني غير صحيح',
+    'auth/weak-password':      'كلمة المرور ضعيفة جداً',
+    'auth/too-many-requests':  'محاولات كثيرة — حاول لاحقاً',
+    'auth/network-request-failed':'تحقق من اتصال الإنترنت',
+  };
+  return map[code] || 'خطأ في تسجيل الدخول';
+}
+
+// ── Navigation ─────────────────────────────────────────────
+function nav(pg) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('on'));
+  document.getElementById('pg-'+pg)?.classList.add('on');
+  document.getElementById('ni-'+pg)?.classList.add('on');
+  APP.currentPage = pg;
+  if (pg === 'profile') renderProfile();
+  if (pg === 'live' && !document.getElementById('live-sections').innerHTML) renderLive();
+  if (pg === 'series') renderSeriesPage();
+}
+function focusSearch() { nav('search'); document.getElementById('search-input').focus(); }
+function onTopSearch(v) {
+  if (v.length > 0) {
+    nav('search');
+    document.getElementById('search-input').value = v;
+    doSearch(v);
+  }
+}
+
+// ── Content Loading ────────────────────────────────────────
+const CACHE_KEY = 'totv_cache_v3';
+const CACHE_TTL = 7 * 24 * 3600 * 1000; // 7 days
+const IMG_CACHE_NAME = 'totv-images-v1';
+
+// Pre-cache critical images via Service Worker Cache API
+async function precacheImages(items) {
+  if (!('caches' in window)) return;
+  try {
+    const cache = await caches.open(IMG_CACHE_NAME);
+    const urls = items
+      .filter(i => i.stream_icon || i.cover)
+      .slice(0, 200)
+      .map(i => i.stream_icon || i.cover)
+      .filter(u => u && u.startsWith('http'));
+    // Cache in background batches of 20
+    for (let i = 0; i < urls.length; i += 20) {
+      const batch = urls.slice(i, i + 20);
+      Promise.all(batch.map(url =>
+        cache.match(url).then(hit => {
+          if (!hit) return cache.add(url).catch(() => {});
+        })
+      ));
+      await new Promise(r => setTimeout(r, 300));
+    }
+  } catch(_) {}
+}
+
+async function loadContent() {
+  // 1. Load from cache IMMEDIATELY for instant display
+  const cached = loadFromCache();
+  if (cached) {
+    APP.movies = cached.movies||[];
+    APP.series = cached.series||[];
+    APP.live   = cached.live||[];
+    APP.mCats  = cached.mCats||[];
+    APP.sCats  = cached.sCats||[];
+    APP.lCats  = cached.lCats||[];
+    APP.loaded = true;
+    renderHome();
+    // Refresh from network in background (non-blocking)
+    fetchFromNetwork().catch(()=>{});
+    return;
+  }
+
+  // 2. No cache — show loading indicator then fetch
+  const el = document.getElementById('home-sections');
+  if (el) el.innerHTML = '<div style="text-align:center;padding:80px 20px;color:var(--t3)"><div style="font-size:32px;margin-bottom:12px">⏳</div>جاري تحميل المحتوى...</div>';
+  await fetchFromNetwork();
+}
+
+function loadFromCache() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const {ts, data} = JSON.parse(raw);
+    if (Date.now() - ts > CACHE_TTL) return null;
+    return data;
+  } catch(_) { return null; }
+}
+
+function saveToCache(data) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ts:Date.now(), data}));
+  } catch(_) {}
+}
+
+async function fetchFromNetwork() {
+  // Get active servers from Firestore
+  try {
+    const snap = await db.collection('servers').where('active','==',true).orderBy('priority').get();
+    const servers = snap.docs.map(d => ({...d.data(), id:d.id}));
+    if (servers.length > 0) {
+      for (const srv of servers) {
+        try {
+          const ok = await fetchFromServer(srv);
+          if (ok) return;
+        } catch(_) {}
+      }
+    }
+  } catch(_) {}
+
+  // Hardcoded Fallback
+  try {
+    await fetchFromServer({
+      host:     'http://silka.m3um9xplus.org:2052',
+      username: 'totv5201093051',
+      password: '17348547711072',
+    });
+  } catch(_) {}
+}
+
+async function fetchFromServer(srv) {
+  const h = (srv.host||'').replace(/\/$/, '');
+  const u = srv.username||'';
+  const p = srv.password||'';
+  if (!h||!u) return false;
+
+  const base = `${h}/player_api.php?username=${u}&password=${p}`;
+  const fetchJSON = (url) => {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 12000); // 12s timeout
+    return fetch(url, {
+      mode: 'cors',
+      signal: ctrl.signal,
+      headers: { 'Accept': 'application/json' }
+    }).then(r => { clearTimeout(timer); return r.json(); })
+      .catch(() => {
+        clearTimeout(timer);
+        const ctrl2 = new AbortController();
+        const t2 = setTimeout(() => ctrl2.abort(), 10000);
+        return fetch(url, { signal: ctrl2.signal })
+          .then(r => { clearTimeout(t2); return r.json(); })
+          .catch(() => []);
+      });
+  };
+  const [movies, series, live, mCats, sCats, lCats] = await Promise.all([
+    fetchJSON(`${base}&action=get_vod_streams`),
+    fetchJSON(`${base}&action=get_series`),
+    fetchJSON(`${base}&action=get_live_streams`),
+    fetchJSON(`${base}&action=get_vod_categories`),
+    fetchJSON(`${base}&action=get_series_categories`),
+    fetchJSON(`${base}&action=get_live_categories`),
+  ]);
+
+  if (!Array.isArray(movies)&&!Array.isArray(live)) return false;
+
+  APP.movies = Array.isArray(movies) ? movies : [];
+  APP.series = Array.isArray(series) ? series : [];
+  APP.live   = Array.isArray(live)   ? live   : [];
+  APP.mCats  = Array.isArray(mCats)  ? mCats  : [];
+  APP.sCats  = Array.isArray(sCats)  ? sCats  : [];
+  APP.lCats  = Array.isArray(lCats)  ? lCats  : [];
+  APP.loaded = true;
+  APP.activeServer = srv; // save working server for stream URL building
+
+  saveToCache({movies:APP.movies.slice(0,3000), series:APP.series.slice(0,3000),
+               live:APP.live.slice(0,2000), mCats:APP.mCats, sCats:APP.sCats, lCats:APP.lCats});
+
+  // Precache poster images in background for fast display
+  precacheImages([...APP.movies.slice(0,100), ...APP.series.slice(0,100), ...APP.live.slice(0,50)]);
+
+  renderHome();
+  if (APP.currentPage==='live') renderLive();
+  if (APP.currentPage==='series') renderSeriesPage();
+  return true;
+}
+
+// ── RENDER HOME ────────────────────────────────────────────
+function renderHome() {
+  renderHero();
+  const el = document.getElementById('home-sections');
+  let html = '';
+
+  // Genre sections for movies
+  html += buildGenreSections(APP.movies, APP.mCats, 'movie');
+  // Genre sections for series
+  html += buildGenreSections(APP.series, APP.sCats, 'series');
+
+  el.innerHTML = html;
+}
+
+function buildGenreSections(items, cats, type) {
+  if (!items.length) return '';
+  let html = '';
+  const label = type==='movie' ? 'أحدث الأفلام' : 'أحدث المسلسلات';
+
+  // First section — all items
+  html += sectionHdr(label, `openGridPage('${type}','${label}',-1)`);
+  html += `<div class="h-row">`;
+  items.slice(0,20).forEach(item => {
+    html += portraitCard(item, type);
+  });
+  html += `</div>`;
+
+  // Per-genre sections (max 5)
+  let shown = 0;
+  for (const cat of cats) {
+    if (shown >= 5) break;
+    const catId   = cat.category_id||cat.id||'';
+    const catName = cat.category_name||cat.name||'';
+    if (!catId||!catName) continue;
+    const filtered = items.filter(i => i.category_id == catId);
+    if (filtered.length < 3) continue;
+    shown++;
+    html += sectionHdr(catName, `openGridPage('${type}','${encodeURIComponent(catName)}','${catId}')`);
+    html += `<div class="h-row">`;
+    filtered.slice(0,20).forEach(item => { html += portraitCard(item, type); });
+    // View All button
+    if (filtered.length > 20) {
+      html += `<div class="card-p" onclick="openGridPage('${type}','${encodeURIComponent(catName)}','${catId}')">
+        <div class="card-p-img" style="display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;background:var(--goldbg);border:1px solid rgba(245,197,24,.3)">
+          <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="var(--gold)" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          <span style="font-size:10px;color:var(--gold);font-weight:700">عرض الكل</span>
+          <span style="font-size:9px;color:var(--t3)">${filtered.length}</span>
+        </div>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+  return html;
+}
+
+function sectionHdr(title, moreClick) {
+  return `<div class="sec-hdr">
+    <div class="sec-hdr-bar"></div>
+    <div class="sec-hdr-title">${title}</div>
+    <div class="sec-hdr-more" onclick="${moreClick}">عرض الكل</div>
+  </div>`;
+}
+
+function portraitCard(item, type) {
+  const img  = item.stream_icon||item.cover||item.logo||'';
+  const name = item.name||item.title||'';
+  const id   = item.stream_id||item.series_id||item.id||'';
+  const isNew = isNewContent(item);
+  const isPremNeeded = needsSub(item);
+  return `<div class="card-p" onclick="openInfo(${JSON.stringify(item).replace(/"/g,'&quot;')},'${type}')">
+    <div class="card-p-img">
+      ${img ? `<img src="${img}" alt="${name}" loading="lazy" onerror="this.style.display='none'">` : `<div class="no-img">${name}</div>`}
+      ${isNew ? `<div class="card-p-badge new">جديد</div>` : ''}
+      
+    </div>
+    <div class="card-p-name">${name}</div>
+  </div>`;
+}
+
+function liveCard(ch) {
+  const img  = ch.stream_icon||ch.logo||'';
+  const name = ch.name||'';
+  return `<div class="card-ch" onclick="openLive(${JSON.stringify(ch).replace(/"/g,'&quot;')})">
+    <div class="card-ch-img">
+      ${img ? `<img src="${img}" alt="${name}" loading="lazy" onerror="this.parentNode.innerHTML='<span style=font-size:10px;color:var(--t3)>${name}</span>'">` : `<span style="font-size:10px;color:var(--t3);padding:8px;text-align:center">${name}</span>`}
+      <div class="live-badge"><div class="live-dot"></div><span>LIVE</span></div>
+    </div>
+    <div class="card-ch-name">${name}</div>
+  </div>`;
+}
+
+// ── HERO ──────────────────────────────────────────────────
+function renderHero() {
+  const pool = [...APP.movies.slice(0,30), ...APP.series.slice(0,20)];
+  pool.sort(() => Math.random() - .5);
+  APP.heroes = pool.slice(0,6);
+  if (!APP.heroes.length) return;
+
+  const wrap = document.getElementById('hero-wrap');
+  // Build slides
+  let slidesHtml = '';
+  let dotsHtml   = '';
+  APP.heroes.forEach((item, i) => {
+    const img  = item.stream_icon||item.cover||item.logo||'';
+    const name = item.name||item.title||'';
+    slidesHtml += `
+      <div class="hero-slide${i===0?' on':''}" id="hero-${i}">
+        <div class="hero-bg" id="hero-bg-${i}" style="${img?`background-image:url(${img})`:'background:var(--surface)'}"></div>
+        <div class="hero-overlay"></div><div class="hero-overlay2"></div>
+        <div class="hero-content">
+          <div class="hero-tags">
+            <span class="hero-tag new">✦ جديد</span>
+          </div>
+          <div class="hero-title">${name}</div>
+          <div class="hero-meta" id="hero-meta-${i}"></div>
+          <div class="hero-btns">
+            <button class="hero-play" onclick="heroPlay(${i})">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg> تشغيل
+            </button>
+            <button class="hero-info-btn" onclick="heroInfo(${i})">
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              معلومات
+            </button>
+          </div>
+        </div>
+      </div>`;
+    dotsHtml += `<div class="hero-dot${i===0?' on':''}" id="hdot-${i}" onclick="goHero(${i})"></div>`;
+  });
+
+  wrap.innerHTML = slidesHtml + `<div class="hero-dots">${dotsHtml}</div>`;
+  startHeroAuto();
+}
+
+function heroPlay(i) {
+  const item = APP.heroes[i];
+  if (!item) return;
+  openInfo(item, item.series_id ? 'series' : 'movie');
+}
+
+function heroInfo(i) {
+  const item = APP.heroes[i];
+  if (item) openInfo(item, item.series_id ? 'series' : 'movie');
+}
+
+function goHero(i) {
+  document.querySelectorAll('.hero-slide').forEach((s,idx) => s.classList.toggle('on',idx===i));
+  document.querySelectorAll('.hero-dot').forEach((d,idx) => d.classList.toggle('on',idx===i));
+  APP.heroIdx = i;
+  resetHeroAuto();
+}
+
+function startHeroAuto() {
+  clearInterval(APP.heroTimer);
+  APP.heroTimer = setInterval(() => {
+    const next = (APP.heroIdx + 1) % APP.heroes.length;
+    goHero(next);
+  }, 5000);
+}
+
+function resetHeroAuto() { startHeroAuto(); }
+
+// ── LIVE ──────────────────────────────────────────────────
+const SPORT_CATS = {
+  'bein':    {label:'beIN Sports',     emoji:'🎯', order:0},
+  'sky':     {label:'Sky Sports',      emoji:'⚽', order:1},
+  'ucl':     {label:'دوري الأبطال 🏆', emoji:'🏆', order:2},
+  'premier': {label:'الدوري الإنجليزي',emoji:'󴿿', order:3},
+  'laliga':  {label:'الدوري الإسباني', emoji:'🇪🇸',order:4},
+  'seriea':  {label:'الدوري الإيطالي', emoji:'🇮🇹',order:5},
+  'bundes':  {label:'الدوري الألماني', emoji:'🇩🇪',order:6},
+  'sport':   {label:'رياضة أخرى',      emoji:'🏅', order:7},
+  'mbc':     {label:'MBC',             emoji:'📺', order:8},
+  'news':    {label:'أخبار',            emoji:'📰', order:9},
+  'movies':  {label:'أفلام',            emoji:'🎬', order:10},
+  'series':  {label:'مسلسلات',          emoji:'🎭', order:11},
+  'kids':    {label:'أطفال',            emoji:'🧒', order:12},
+  'general': {label:'عامة',             emoji:'📡', order:13},
+};
+
+function categorizeLive(all) {
+  const buckets = {};
+  Object.keys(SPORT_CATS).forEach(k => buckets[k] = []);
+  for (const ch of all) {
+    const n = (ch.name||'').toLowerCase();
+    if      (n.includes('bein')||n.includes('بين'))                               buckets.bein.push(ch);
+    else if (n.includes('sky sport'))                                              buckets.sky.push(ch);
+    else if (n.includes('champion')||n.includes('ucl')||n.includes('أبطال'))      buckets.ucl.push(ch);
+    else if (n.includes('premier')||n.includes('انجليزي')||n.includes('إنجليزي')) buckets.premier.push(ch);
+    else if (n.includes('la liga')||n.includes('laliga')||n.includes('اسباني'))   buckets.laliga.push(ch);
+    else if (n.includes('serie a')||n.includes('سيري')||n.includes('ايطالي'))     buckets.seriea.push(ch);
+    else if (n.includes('bundesliga')||n.includes('بوندس')||n.includes('الماني')) buckets.bundes.push(ch);
+    else if (n.includes('sport')||n.includes('رياضة')||n.includes('arena'))       buckets.sport.push(ch);
+    else if (n.includes('mbc'))                                                    buckets.mbc.push(ch);
+    else if (n.includes('news')||n.includes('أخبار')||n.includes('الجزيرة'))      buckets.news.push(ch);
+    else if (n.includes('movie')||n.includes('أفلام')||n.includes('cinema'))      buckets.movies.push(ch);
+    else if (n.includes('serie')||n.includes('مسلسل'))                            buckets.series.push(ch);
+    else if (n.includes('kids')||n.includes('أطفال')||n.includes('cartoon'))      buckets.kids.push(ch);
+    else                                                                           buckets.general.push(ch);
+  }
+  // Sort bein numerically
+  buckets.bein.sort((a,b)=>{
+    const na=(a.name||'').toLowerCase(), nb=(b.name||'').toLowerCase();
+    const a4k=na.includes('4k')?1:0, b4k=nb.includes('4k')?1:0;
+    if(a4k!==b4k) return a4k-b4k;
+    const ai=parseInt((na.match(/\d+/)||['999'])[0]);
+    const bi=parseInt((nb.match(/\d+/)||['999'])[0]);
+    return ai-bi;
+  });
+  return buckets;
+}
+
+function renderLive() {
+  const el = document.getElementById('live-sections');
+  if (!APP.live.length) {
+    el.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--t3)">جاري تحميل القنوات...</div>';
+    return;
+  }
+  const buckets = categorizeLive(APP.live);
+  let html = '';
+  const ordered = Object.entries(SPORT_CATS).sort((a,b)=>a[1].order-b[1].order);
+  for (const [key, meta] of ordered) {
+    const chs = buckets[key];
+    if (!chs||!chs.length) continue;
+    html += `<div class="sport-league-hdr">
+      <span class="sport-league-emoji">${meta.emoji}</span>
+      <span class="sport-league-name">${meta.label}</span>
+      <span class="sport-league-count">${chs.length} قناة</span>
+      ${chs.length>20 ? `<span class="sec-hdr-more" onclick="openLiveSection('${key}','${meta.label}')">عرض الكل</span>` : ''}
+    </div>
+    <div class="h-row">`;
+    chs.slice(0,20).forEach(ch => { html += liveCard(ch); });
+    if (chs.length>20) {
+      html += `<div class="card-ch" onclick="openLiveSection('${key}','${meta.label}')">
+        <div class="card-ch-img" style="background:var(--goldbg);border:1px solid rgba(245,197,24,.3);flex-direction:column;gap:4px">
+          <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="var(--gold)" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          <span style="font-size:9px;color:var(--gold);font-weight:700">+${chs.length-20}</span>
+        </div>
+        <div class="card-ch-name">عرض الكل</div>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+  el.innerHTML = html + '<div style="height:20px"></div>';
+}
+
+// ── Open Live ─────────────────────────────────────────────
+function openLive(ch) {
+  // Try direct_source first, fallback to built URL
+  const direct = ch.direct_source || ch.url || '';
+  const built  = buildStreamUrl(ch, 'live');
+  const url    = direct || built;
+  if (!url) { showToast('⚠ الرابط غير متاح حالياً'); return; }
+  playStream(url, ch.name || '');
+}
+
+// ── Live Section Page (View All) ──────────────────────────
+function openLiveSection(key, label) {
+  const buckets = categorizeLive(APP.live);
+  const chs = buckets[key] || [];
+  const meta = SPORT_CATS[key] || {emoji:'📡'};
+  showGridOverlay(label, chs, 'live', meta.emoji);
+}
+
+// ── Grid Overlay Page ─────────────────────────────────────
+function openGridPage(type, label, catId) {
+  const items = type==='movie' ? APP.movies : APP.series;
+  const filtered = catId===-1||catId==='-1' ? items
+    : items.filter(i => i.category_id == catId);
+  showGridOverlay(decodeURIComponent(label), filtered, type, '');
+}
+
+function showGridOverlay(title, items, type, emoji) {
+  const overlay = document.getElementById('grid-overlay') || createGridOverlay();
+  const titleEl = document.getElementById('go-title');
+  const gridEl  = document.getElementById('go-grid');
+  if (titleEl) titleEl.textContent = (emoji?emoji+' ':'')+title;
+
+  let html = '';
+  if (type==='live') {
+    items.forEach(ch => { html += `<div onclick="openLive(${JSON.stringify(ch).replace(/"/g,'&quot;')})" style="cursor:pointer">
+      <div style="aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--surface);border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center">
+        ${ch.stream_icon||ch.logo ? `<img src="${ch.stream_icon||ch.logo}" style="width:80%;height:80%;object-fit:contain" loading="lazy">` : `<span style="font-size:9px;color:var(--t3);padding:4px;text-align:center">${ch.name||''}</span>`}
+      </div>
+      <div style="font-size:10px;color:var(--t2);margin-top:4px;text-align:center;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${ch.name||''}</div>
+    </div>`; });
+  } else {
+    items.forEach(item => {
+      const img  = item.stream_icon||item.cover||'';
+      const name = item.name||'';
+      html += `<div onclick="openInfo(${JSON.stringify(item).replace(/"/g,'&quot;')},'${type}')" style="cursor:pointer">
+        <div style="aspect-ratio:.67;border-radius:10px;overflow:hidden;background:var(--surface)">
+          ${img ? `<img src="${img}" style="width:100%;height:100%;object-fit:cover" loading="lazy">` : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:8px;font-size:10px;color:var(--t3);text-align:center">${name}</div>`}
+        </div>
+        <div style="font-size:10px;color:var(--tx);margin-top:4px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${name}</div>
+      </div>`;
+    });
+  }
+  if (gridEl) gridEl.innerHTML = html || '<div style="color:var(--t3);text-align:center;padding:40px">لا يوجد محتوى</div>';
+  overlay.style.display = 'flex';
+  requestAnimationFrame(()=>overlay.style.opacity='1');
+}
+
+function createGridOverlay() {
+  const el = document.createElement('div');
+  el.id = 'grid-overlay';
+  el.style.cssText = `position:fixed;inset:0;z-index:600;background:var(--bg);
+    flex-direction:column;opacity:0;transition:.25s;display:none;`;
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;padding:calc(var(--safe-top)+12px) 16px 12px;border-bottom:1px solid var(--bdr);flex-shrink:0">
+      <button onclick="closeGridOverlay()" style="background:var(--surface);border:1px solid var(--bdr);border-radius:8px;color:var(--tx);padding:8px 12px;font-family:'Cairo',sans-serif;cursor:pointer;font-size:13px">← رجوع</button>
+      <div id="go-title" style="font-size:16px;font-weight:800;flex:1"></div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:12px">
+      <div id="go-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px"></div>
+    </div>`;
+  document.body.appendChild(el);
+  return el;
+}
+
+function closeGridOverlay() {
+  const el = document.getElementById('grid-overlay');
+  if (el) { el.style.opacity='0'; setTimeout(()=>el.style.display='none',250); }
+}
+
+// ── Info Sheet ────────────────────────────────────────────
+function openInfo(item, type) {
+  const img    = item.stream_icon||item.cover||item.logo||'';
+  const name   = item.name||item.title||'';
+  const rating = item.rating||item.rating_5based||'';
+  const year   = item.year||item.releasedate||item.release_date||'';
+  const genre  = item.genre||item.category_name||'';
+  const plot   = item.plot||item.description||item.overview||'';
+  document.getElementById('info-content').innerHTML = `
+    <div class="info-poster" style="${img?`background-image:url(${img})`:''}" >
+      <div class="info-poster-overlay"></div>
+    </div>
+    <div class="info-body">
+      <div class="info-title">${name}</div>
+      <div class="info-meta">
+        ${year?`<span>${year}</span><span class="sep">·</span>`:''}
+        ${genre?`<span>${genre}</span>`:''}
+        ${rating?`<span class="sep">·</span><span>⭐ ${parseFloat(rating).toFixed(1)}</span>`:''}
+      </div>
+      ${plot?`<div class="info-overview">${plot}</div>`:''}
+      <button class="info-play-btn play" onclick="playItem(${JSON.stringify(item).replace(/"/g,'&quot;')},'${type}')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg> تشغيل الآن
+      </button>
+    </div>`;
+  openModal('modal-info');
+}
+
+function playItem(item, type) {
+  closeModal('modal-info');
+  const name = item.name || item.title || '';
+
+  if (type === 'series') {
+    // Series → show episode picker
+    openEpisodePicker(item);
+    return;
+  }
+  if (type === 'live') {
+    const url = buildStreamUrl(item, 'live');
+    if (!url) { showToast('⚠ الرابط غير متاح'); return; }
+    playStream(url, name);
+    return;
+  }
+  // movie
+  const url = buildStreamUrl(item, 'movie');
+  if (!url) { showToast('⚠ الرابط غير متاح'); return; }
+  playStream(url, name);
+}
+
+// ── Episode Picker for Series ─────────────────────────────
+async function openEpisodePicker(series) {
+  const srv = getSrv();
+  const h   = (srv.host||'').replace(/\/$/, '');
+  const u   = srv.username||'';
+  const p   = srv.password||'';
+  const sid = series.series_id || series.stream_id || series.id || '';
+  const name = series.name || series.title || 'مسلسل';
+
+  // Create episode overlay
+  let epOverlay = document.getElementById('ep-overlay');
+  if (!epOverlay) {
+    epOverlay = document.createElement('div');
+    epOverlay.id = 'ep-overlay';
+    epOverlay.style.cssText = `
+      position:fixed;inset:0;z-index:7000;
+      background:var(--bg);display:flex;flex-direction:column;`;
+    document.body.appendChild(epOverlay);
+  }
+  epOverlay.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;
+      padding:calc(env(safe-area-inset-top,0px)+12px) 16px 12px;
+      border-bottom:1px solid var(--bdr);flex-shrink:0;background:var(--bg);">
+      <button onclick="document.getElementById('ep-overlay').style.display='none'"
+        style="background:var(--surface);border:1px solid var(--bdr);border-radius:8px;
+        color:var(--tx);padding:8px 14px;font-family:'Cairo',sans-serif;cursor:pointer;font-size:13px;">
+        ← رجوع
+      </button>
+      <div style="font-size:15px;font-weight:800;flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${name}</div>
+    </div>
+    <div id="ep-body" style="flex:1;overflow-y:auto;padding:16px;">
+      <div style="text-align:center;padding:40px;color:var(--t3);">
+        <div style="font-size:32px;margin-bottom:12px;">⏳</div>
+        جاري تحميل الحلقات...
+      </div>
+    </div>`;
+  epOverlay.style.display = 'flex';
+
+  // Fetch series info with episodes
+  try {
+    const res  = await fetch(`${h}/player_api.php?username=${u}&password=${p}&action=get_series_info&series_id=${sid}`);
+    const data = await res.json();
+    renderEpisodes(data, series, name, h, u, p);
+  } catch(e) {
+    document.getElementById('ep-body').innerHTML = `
+      <div style="text-align:center;padding:40px;color:var(--t3);">
+        <div style="font-size:40px;margin-bottom:12px;">⚠️</div>
+        تعذّر تحميل الحلقات<br>
+        <button onclick="openEpisodePicker(${JSON.stringify(series).replace(/"/g,'&quot;')})"
+          style="margin-top:16px;padding:10px 20px;border-radius:10px;
+          background:var(--gold);color:#000;border:none;font-family:'Cairo',sans-serif;
+          font-size:13px;font-weight:700;cursor:pointer;">
+          إعادة المحاولة
+        </button>
+      </div>`;
+  }
+}
+
+function renderEpisodes(data, series, name, h, u, p) {
+  const epBody = document.getElementById('ep-body');
+  if (!epBody) return;
+
+  const episodes = data.episodes || {};
+  const seasons  = Object.keys(episodes).sort((a,b) => parseInt(a)-parseInt(b));
+  const info     = data.info || {};
+  const cover    = info.cover || series.stream_icon || series.cover || '';
+
+  if (!seasons.length) {
+    epBody.innerHTML = `<div style="text-align:center;padding:40px;color:var(--t3);">لا توجد حلقات متاحة</div>`;
+    return;
+  }
+
+  let html = '';
+
+  // Series header
+  if (cover) {
+    html += `<div style="display:flex;gap:14px;margin-bottom:20px;align-items:flex-start;">
+      <img src="${cover}" style="width:80px;border-radius:10px;flex-shrink:0;object-fit:cover;" onerror="this.remove()">
+      <div style="flex:1;">
+        <div style="font-size:15px;font-weight:800;margin-bottom:4px;">${name}</div>
+        ${info.plot ? `<div style="font-size:12px;color:var(--t2);line-height:1.6;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">${info.plot}</div>` : ''}
+        <div style="font-size:11px;color:var(--t3);margin-top:4px;">${seasons.length} موسم · ${Object.values(episodes).flat().length} حلقة</div>
+      </div>
+    </div>`;
+  }
+
+  // Seasons tabs
+  html += `<div id="seasons-tabs" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;margin-bottom:14px;scrollbar-width:none;">`;
+  seasons.forEach((s, i) => {
+    html += `<button class="season-tab${i===0?' active':''}" data-season="${s}"
+      onclick="switchSeason('${s}')"
+      style="flex-shrink:0;padding:8px 16px;border-radius:20px;border:1px solid var(--bdr);
+      background:${i===0?'var(--gold)':'var(--surface)'};
+      color:${i===0?'#000':'var(--t2)'};
+      font-size:12px;font-weight:700;font-family:'Cairo',sans-serif;cursor:pointer;
+      transition:.2s;">
+      الموسم ${s}
+    </button>`;
+  });
+  html += '</div>';
+
+  // Episodes for each season (hidden except first)
+  seasons.forEach((s, si) => {
+    const eps = episodes[s] || [];
+    html += `<div class="season-eps" id="season-${s}" style="display:${si===0?'block':'none'};">`;
+    html += `<div style="display:flex;flex-direction:column;gap:2px;">`;
+    eps.forEach(ep => {
+      const epId    = ep.id || '';
+      const epNum   = ep.episode_num || ep.episode || '';
+      const epTitle = ep.title || `الحلقة ${epNum}`;
+      const epDur   = ep.info?.duration || '';
+      const epThumb = ep.info?.movie_image || ep.info?.cover_big || '';
+      const ext     = ep.container_extension || 'mkv';
+      const epUrl   = `${h}/series/${u}/${p}/${epId}.${ext}`;
+      html += `
+        <div onclick="playStream('${epUrl}', '${name} — الحلقة ${epNum}')"
+          style="display:flex;align-items:center;gap:12px;padding:12px;
+          border-radius:12px;cursor:pointer;transition:.15s;
+          background:var(--surface);border:1px solid var(--bdr);margin-bottom:6px;"
+          onmouseover="this.style.background='var(--card)'" onmouseout="this.style.background='var(--surface)'">
+          ${epThumb
+            ? `<img src="${epThumb}" style="width:90px;height:54px;border-radius:8px;object-fit:cover;flex-shrink:0;" onerror="this.remove()">`
+            : `<div style="width:90px;height:54px;border-radius:8px;background:var(--bg3);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:22px;">▶</div>`}
+          <div style="flex:1;overflow:hidden;">
+            <div style="font-size:13px;font-weight:700;margin-bottom:3px;">الحلقة ${epNum}</div>
+            <div style="font-size:11px;color:var(--t2);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${epTitle}</div>
+            ${epDur ? `<div style="font-size:10px;color:var(--t3);margin-top:2px;">${epDur}</div>` : ''}
+          </div>
+          <svg style="flex-shrink:0;" width="20" height="20" viewBox="0 0 24 24" fill="var(--gold)"><circle cx="12" cy="12" r="11" fill="rgba(245,197,24,.15)"/><polygon points="10,8 17,12 10,16"/></svg>
+        </div>`;
+    });
+    html += `</div></div>`;
+  });
+
+  epBody.innerHTML = html;
+}
+
+function switchSeason(s) {
+  // Hide all seasons
+  document.querySelectorAll('.season-eps').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.season-tab').forEach(btn => {
+    btn.style.background = 'var(--surface)';
+    btn.style.color = 'var(--t2)';
+  });
+  // Show selected
+  const epEl  = document.getElementById('season-' + s);
+  const tabEl = document.querySelector(`.season-tab[data-season="${s}"]`);
+  if (epEl)  epEl.style.display = 'block';
+  if (tabEl) { tabEl.style.background = 'var(--gold)'; tabEl.style.color = '#000'; }
+}
+
+// ── Subscription Logic ────────────────────────────────────
+function needsSub(item) {
+  return false; // All content free — no subscription required
+}
+function isNewContent(item) {
+  const year = parseInt(item.year||item.releasedate||'0');
+  return year >= 2024;
+}
+
+function openTOTV()  { window.open('https://totv.app/','_blank'); closeModal('modal-sub'); }
+function openBot()   { window.open('https://t.me/PaymentTOTVBOT','_blank'); closeModal('modal-sub'); }
+function showActivate() { openModal('modal-activate'); }
+
+async function doActivate() {
+  const code = document.getElementById('act-code').value.trim().toUpperCase();
+  const err  = document.getElementById('act-err');
+  if (code.length < 6) { err.textContent='أدخل الكود كاملاً'; return; }
+
+  const user = auth.currentUser;
+  if (!user) { err.textContent='يجب تسجيل الدخول أولاً'; return; }
+
+  try {
+    const snap = await db.collection('activation_codes')
+      .where('code','==',code).where('used','==',false).get();
+    if (snap.empty) { err.textContent='الكود غير صحيح أو مستخدم مسبقاً'; return; }
+
+    const doc  = snap.docs[0];
+    const data = doc.data();
+    const expiry = new Date();
+    expiry.setDate(expiry.getDate() + (data.days||30));
+
+    // Mark code as used
+    await db.collection('activation_codes').doc(doc.id).update({
+      used:true, used_by:user.uid, used_at:F.serverTimestamp()
+    });
+    // Grant subscription
+    await db.collection('vip_users').doc(user.uid).set({
+      active:true, plan:'premium',
+      expiry_date: firebase.firestore.Timestamp.fromDate(expiry),
+      activated_at: F.serverTimestamp(),
+    },{merge:true});
+    await db.collection('users').doc(user.uid).set({plan:'premium'},{merge:true});
+
+    APP.plan   = 'premium';
+    APP.expiry = expiry;
+    closeModal('modal-activate');
+    showToast('🎉 تم تفعيل الاشتراك بنجاح!');
+    renderProfile();
+    renderHome();
+  } catch(e) {
+    err.textContent = 'خطأ: ' + (e.message||'حاول مرة أخرى');
+  }
+}
+
+
+// ── SERIES PAGE ───────────────────────────────────────────
+let seriesActiveCat = 'all';
+
+function renderSeriesPage() {
+  const filterEl = document.getElementById('series-cat-filter');
+  const gridEl   = document.getElementById('series-poster-grid');
+  if (!APP.series.length) {
+    if (gridEl) gridEl.innerHTML = '<div class="series-empty"><div class="series-empty-icon">🎬</div><div>جاري تحميل المسلسلات...</div></div>';
+    return;
+  }
+
+  // Build category filter
+  let filterHtml = `<button class="series-cat-btn${seriesActiveCat==='all'?' on':''}" onclick="setSeriesCat('all')">الكل</button>`;
+  APP.sCats.slice(0,12).forEach(cat => {
+    const id = cat.category_id||cat.id||'';
+    const nm = cat.category_name||cat.name||'';
+    if (!id||!nm) return;
+    const on = seriesActiveCat===id?' on':'';
+    filterHtml += `<button class="series-cat-btn${on}" onclick="setSeriesCat('${id}')">${nm}</button>`;
+  });
+  if (filterEl) filterEl.innerHTML = filterHtml;
+
+  // Filter items
+  const items = seriesActiveCat==='all'
+    ? APP.series
+    : APP.series.filter(s => s.category_id == seriesActiveCat);
+
+  // Render poster grid
+  let html = '<div class="series-poster-grid">';
+  items.slice(0, 200).forEach(item => {
+    const img  = item.stream_icon||item.cover||item.logo||'';
+    const name = item.name||item.title||'';
+    const year = item.year||item.releasedate||'';
+    const rating = item.rating||item.rating_5based||'';
+    html += `<div class="series-poster-card" onclick="openInfo(${JSON.stringify(item).replace(/"/g,'&quot;')},'series')">
+      <div class="series-poster-img">
+        ${img
+          ? `<img src="${img}" alt="${name}" loading="lazy" onerror="this.parentNode.style.background='var(--surface)';this.remove()">`
+          : `<div class="series-poster-no-img">${name}</div>`}
+        
+        ${isNewContent(item) ? '<div class="series-poster-new">جديد</div>' : ''}
+      </div>
+      <div class="series-poster-info">
+        <div class="series-poster-name">${name}</div>
+        <div class="series-poster-meta">
+          ${year ? `<span>${year}</span>` : ''}
+          ${rating ? `<span>⭐ ${parseFloat(rating).toFixed(1)}</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+
+  if (items.length > 200) {
+    html += `<div style="text-align:center;padding:16px;color:var(--t3);font-size:12px">عرض 200 من ${items.length} مسلسل</div>`;
+  }
+
+  if (gridEl) gridEl.innerHTML = html || '<div class="series-empty"><div class="series-empty-icon">📭</div><div>لا توجد مسلسلات في هذه الفئة</div></div>';
+}
+
+function setSeriesCat(id) {
+  seriesActiveCat = id;
+  renderSeriesPage();
+}
+
+// ── Search ────────────────────────────────────────────────
+let searchTimer = null;
+function doSearch(q) {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(()=>execSearch(q), 300);
+}
+
+function filterType(btn) {
+  document.querySelectorAll('.scat').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  APP.searchType = btn.dataset.t;
+  execSearch(document.getElementById('search-input').value);
+}
+
+function execSearch(q) {
+  q = (q||'').toLowerCase().trim();
+  const el = document.getElementById('search-results');
+  if (!q) {
+    el.innerHTML = '<div class="search-empty" style="grid-column:1/-1"><svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><p>ابحث عن محتواك المفضل</p></div>';
+    return;
+  }
+  const type = APP.searchType;
+  let pool = [];
+  if (type==='all'||type==='movie')  pool.push(...APP.movies.map(i=>({...i,_t:'movie'})));
+  if (type==='all'||type==='series') pool.push(...APP.series.map(i=>({...i,_t:'series'})));
+  if (type==='all'||type==='live')   pool.push(...APP.live.map(i=>({...i,_t:'live'})));
+
+  const res = pool.filter(i=>(i.name||'').toLowerCase().includes(q)).slice(0,60);
+  if (!res.length) {
+    el.innerHTML = `<div class="search-empty" style="grid-column:1/-1"><p>لا نتائج لـ "${q}"</p></div>`;
+    return;
+  }
+  el.innerHTML = res.map(item => {
+    const img  = item.stream_icon||item.cover||item.logo||'';
+    const name = item.name||'';
+    const t    = item._t;
+    return `<div onclick="openInfo(${JSON.stringify(item).replace(/"/g,'&quot;')},'${t}')" style="cursor:pointer">
+      <div style="aspect-ratio:.67;border-radius:10px;overflow:hidden;background:var(--surface);border:1px solid var(--bdr)">
+        ${img?`<img src="${img}" style="width:100%;height:100%;object-fit:cover" loading="lazy">`:`<div style="height:100%;display:flex;align-items:center;justify-content:center;padding:8px;font-size:9px;color:var(--t3);text-align:center">${name}</div>`}
+      </div>
+      <div style="font-size:10px;color:var(--tx);margin-top:4px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${name}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Profile ───────────────────────────────────────────────
+function renderProfile() {
+  const el     = document.getElementById('profile-content');
+  const user   = auth.currentUser || APP.user;
+  const plan   = APP.plan;
+  const isPrem = plan !== 'free';
+  const name   = user?.displayName || user?.email?.split('@')[0] || 'ضيف';
+  const email  = user?.email || '';
+  const photo  = user?.photoURL || '';
+
+  const planLabel = {free:'مجاني',premium:'Premium ✓',totv:'TOTV VIP ✦'}[plan]||plan;
+  const planClass = {free:'free',premium:'premium',totv:'totv'}[plan]||'free';
+
+  let html = `
+  <div class="profile-header">
+    <div class="profile-avatar">
+      ${photo
+        ? `<img src="${photo}" alt="${name}">`
+        : `<svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="var(--t3)" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`}
+    </div>
+    <div class="profile-name">${name}</div>
+    ${email ? `<div class="profile-email">${email}</div>` : ''}
+    <div class="plan-badge ${planClass}">${planLabel}</div>
+  </div>
+
+  <!-- Subscription Card -->
+  <div class="sub-card ${isPrem?'active':'inactive'}">
+    <div class="sub-card-row">
+      <div class="sub-card-icon ${isPrem?'active':'inactive'}">
+        ${isPrem
+          ? `<svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="var(--grn)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/></svg>`
+          : `<svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="var(--gold)" stroke-width="2"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>`}
+      </div>
+      <div style="flex:1">
+        <div class="sub-card-title">${isPrem ? 'الاشتراك نشط' : 'اشترك للوصول الكامل'}</div>
+        <div class="sub-card-sub">
+          ${isPrem && APP.expiry
+            ? `ينتهي: ${APP.expiry.toLocaleDateString('ar')}`
+            : isPrem ? 'اشتراك دائم' : 'جميع القنوات والأفلام والمسلسلات'}
+        </div>
+      </div>
+      ${!isPrem
+        ? `<button class="sub-action-btn buy" onclick="openModal('modal-sub')">اشترك</button>`
+        : `<button class="sub-action-btn renew" onclick="openModal('modal-sub')">تجديد</button>`}
+    </div>
+  </div>`;
+
+  // Account section — hide subscription buttons when premium
+  html += `<div class="menu-section"><div class="menu-section-title">الحساب</div></div>
+  <div class="menu-group" style="margin:0 16px 12px">
+    <div class="menu-row" onclick="editProfile()">
+      <div class="menu-row-icon"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+      <div class="menu-row-text"><div class="menu-row-title">تعديل الملف الشخصي</div></div>
+      <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+    </div>
+    ${!isPrem ? `
+    <div class="menu-row" onclick="openModal('modal-sub')">
+      <div class="menu-row-icon"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg></div>
+      <div class="menu-row-text"><div class="menu-row-title">الاشتراك</div><div class="menu-row-sub">اشترك عبر totv.app أو @PaymentTOTVBOT</div></div>
+      <span class="menu-badge">جديد</span>
+    </div>
+    <div class="menu-row" onclick="showActivate()">
+      <div class="menu-row-icon"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+      <div class="menu-row-text"><div class="menu-row-title">تفعيل كود</div><div class="menu-row-sub">أدخل كود الاشتراك</div></div>
+      <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+    </div>` : ''}
+  </div>`;
+
+  // Support section with email
+  html += `<div class="menu-section"><div class="menu-section-title">الدعم</div></div>
+  <a class="support-email-row" href="mailto:totv.support@gmail.com">
+    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+    <div class="support-email-txt">totv.support@gmail.com</div>
+  </a>
+  <div class="menu-group" style="margin:0 16px 12px">
+    <div class="menu-row" onclick="openModal('modal-support')">
+      <div class="menu-row-icon"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+      <div class="menu-row-text"><div class="menu-row-title">مساعد TOTV+</div><div class="menu-row-sub">دعم فوري</div></div>
+      <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+    </div>
+    <div class="menu-row" onclick="window.open('https://t.me/O_2828','_blank')">
+      <div class="menu-row-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="var(--tg)"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248-2.046 9.634c-.154.677-.556.843-1.126.524l-3.107-2.289-1.499 1.441c-.166.166-.305.305-.625.305l.224-3.168 5.771-5.211c.251-.224-.054-.349-.389-.125L7.06 14.557l-3.045-.952c-.661-.207-.675-.661.138-.978l11.879-4.578c.55-.2 1.031.133.53.199z"/></svg></div>
+      <div class="menu-row-text"><div class="menu-row-title">قناة تيليغرام</div><div class="menu-row-sub">@O_2828</div></div>
+      <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+    </div>
+    <div class="menu-row" onclick="window.open('https://totv.app/','_blank')">
+      <div class="menu-row-icon"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
+      <div class="menu-row-text"><div class="menu-row-title">الموقع الرسمي</div><div class="menu-row-sub">totv.app</div></div>
+      <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+    </div>
+    <div class="menu-row" onclick="showAbout()">
+      <div class="menu-row-icon"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+      <div class="menu-row-text"><div class="menu-row-title">عن التطبيق</div><div class="menu-row-sub">TOTV+ v18</div></div>
+    </div>
+  </div>`;
+
+  // Watch timer for guests
+  if (!isPrem) {
+    html += `<div class="timer-card" style="margin:0 16px 16px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="var(--gold)" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+        <span style="font-size:13px;font-weight:700">وقت المشاهدة المجانية</span>
+      </div>
+      <div style="height:4px;background:var(--bdr);border-radius:2px;overflow:hidden;margin-bottom:6px">
+        <div style="height:100%;width:60%;background:linear-gradient(90deg,var(--gold2),var(--gold3));border-radius:2px"></div>
+      </div>
+      <div style="font-size:11px;color:var(--t3)">8 ساعات يومياً للمستخدمين المجانيين</div>
+    </div>`;
+  }
+
+  // Logout
+  if (user && !user.isAnonymous) {
+    html += `<div style="padding:0 16px 16px">
+      <button onclick="doLogout()" style="width:100%;padding:14px;border-radius:14px;border:1px solid rgba(229,57,53,.3);background:rgba(229,57,53,.06);color:#ef5350;font-size:14px;font-weight:700;font-family:'Cairo',sans-serif;cursor:pointer">تسجيل الخروج</button>
+    </div>`;
+  } else {
+    html += `<div style="padding:0 16px 16px">
+      <button onclick="showAuthScreen()" style="width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--gold2),var(--gold3));color:#000;font-size:14px;font-weight:800;font-family:'Cairo',sans-serif;cursor:pointer">تسجيل الدخول</button>
+    </div>`;
+  }
+
+  el.innerHTML = html;
+}
+
+function editProfile() { showToast('🔧 قريباً في التحديث القادم'); }
+
+function showAbout() {
+  showToast('TOTV+ v18 — منصة البث الاحترافية');
+}
+
+async function doLogout() {
+  if (!confirm('هل تريد تسجيل الخروج؟')) return;
+  await auth.signOut();
+  APP.plan = 'premium'; APP.expiry = null;
+  showToast('👋 تم تسجيل الخروج');
+}
+
+// ── Chat Support ───────────────────────────────────────────
+const TG_BOT   = '5902809892:AAFm-HAJpU5-bJVpfPcEpow6UUkGopHvIQI';
+const TG_ADMIN = '5154917874';
+const GEMINI_KEY = 'AIzaSyCqMN_4-sM1lDpuYSKMFPVaN0CYkY9Woj4';
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+const CHAT_CACHE_KEY = 'totv_chat_v1';
+const CHAT_TTL = 24*3600*1000;
+
+function loadChatCache() {
+  try {
+    const raw = localStorage.getItem(CHAT_CACHE_KEY);
+    if (!raw) return;
+    const {ts,msgs} = JSON.parse(raw);
+    if (Date.now()-ts < CHAT_TTL) APP.chatHistory = msgs||[];
+  } catch(_) {}
+}
+
+function saveChatCache() {
+  try {
+    localStorage.setItem(CHAT_CACHE_KEY, JSON.stringify({ts:Date.now(),msgs:APP.chatHistory.slice(-20)}));
+  } catch(_) {}
+}
+
+function renderChatMsgs() {
+  const el = document.getElementById('chat-msgs');
+  if (!el) return;
+  el.innerHTML = APP.chatHistory.map(m => `
+    <div class="chat-bubble ${m.role==='user'?'user':'bot'}">${m.text}</div>
+  `).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+function openChatSupport() {
+  openModal('modal-support');
+  setTimeout(()=>{
+    const el = document.getElementById('chat-msgs');
+    if (el && !el.innerHTML.trim()) {
+      if (APP.chatHistory.length > 0) {
+        renderChatMsgs();
+      } else {
+        APP.chatHistory.push({role:'bot', text:'مرحباً! أنا مساعد TOTV+ 🌟\nرسالتك ستُرسل للدعم الفني. كيف أقدر أساعدك؟'});
+        renderChatMsgs();
+      }
+    }
+    // hide chips after first message
+    if (APP.chatHistory.length > 1) {
+      const chips = document.getElementById('chat-chips');
+      if (chips) chips.style.display = 'none';
+    }
+  },100);
+}
+
+async function chatSend(preText) {
+  const input = document.getElementById('chat-input');
+  const text  = (preText || input?.value || '').trim();
+  if (!text) return;
+  if (input) input.value = '';
+
+  // Hide chips
+  const chips = document.getElementById('chat-chips');
+  if (chips) chips.style.display = 'none';
+
+  APP.chatHistory.push({role:'user', text});
+  renderChatMsgs();
+
+  // Forward to admin via Telegram
+  const user  = auth.currentUser || APP.user;
+  const uInfo = user?.email || user?.uid || 'ضيف';
+  fetch(`https://api.telegram.org/bot${TG_BOT}/sendMessage`,{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({chat_id:TG_ADMIN, parse_mode:'HTML',
+      text:`📩 <b>دعم TOTV+</b>\n👤 ${uInfo}\n💬 ${text}`})
+  }).catch(()=>{});
+
+  // Gemini reply
+  try {
+    const history = APP.chatHistory.slice(-10).map(m=>({
+      role: m.role==='user'?'user':'model',
+      parts:[{text:m.text}]
+    }));
+    const r = await fetch(`${GEMINI_URL}?key=${GEMINI_KEY}`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        systemInstruction:{parts:[{text:'أنت مساعد TOTV+ ودود. للاشتراك: https://totv.app/ أو @PaymentTOTVBOT. الدعم: totv.support@gmail.com رد بإيجاز بالعربية.'}]},
+        contents: history,
+        generationConfig:{temperature:.7,maxOutputTokens:300}
+      })
+    });
+    const data  = await r.json();
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || fallbackReply(text);
+    APP.chatHistory.push({role:'bot',text:reply});
+  } catch(_) {
+    APP.chatHistory.push({role:'bot',text:fallbackReply(text)});
+  }
+
+  saveChatCache();
+  renderChatMsgs();
+}
+
+function fallbackReply(q) {
+  const ql = q.toLowerCase();
+  if (ql.includes('اشتراك')||ql.includes('سعر'))
+    return 'للاشتراك:\n🌐 https://totv.app/\n🤖 @PaymentTOTVBOT\n📧 totv.support@gmail.com';
+  if (ql.includes('بطيء')||ql.includes('يتقطع'))
+    return 'جرب:\n• تغيير السيرفر من الإعدادات\n• إعادة تشغيل التطبيق\n• التحقق من سرعة الإنترنت';
+  if (ql.includes('كود')||ql.includes('تفعيل'))
+    return 'للحصول على كود التفعيل:\n🤖 @PaymentTOTVBOT\n🌐 https://totv.app/';
+  return 'تم إرسال رسالتك لفريق الدعم ✅\nللتواصل المباشر:\n📧 totv.support@gmail.com\n💬 @O_2828';
+}
+
+// ── Modals ─────────────────────────────────────────────────
+function openModal(id) {
+  document.getElementById(id)?.classList.add('show');
+}
+function closeModal(id) {
+  document.getElementById(id)?.classList.remove('show');
+}
+
+// ── PWA Install ────────────────────────────────────────────
+let deferredPrompt = null;
+function initPWA() {
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    // Show install banner after 3s
+    setTimeout(() => {
+      const banner = document.getElementById('install-banner');
+      if (banner) banner.classList.add('show');
+    }, 3000);
+  });
+
+  document.getElementById('install-btn')?.addEventListener('click', async () => {
+    if (!deferredPrompt) {
+      // iOS instructions
+      showToast('iOS: اضغط Share ثم "إضافة للشاشة الرئيسية"');
+      return;
+    }
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') showToast('✅ تم التثبيت!');
+    deferredPrompt = null;
+    document.getElementById('install-banner').classList.remove('show');
+  });
+
+  // iOS Safari specific
+  const isIOS   = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone;
+  if (isIOS && isSafari && !isStandalone) {
+    setTimeout(() => {
+      document.getElementById('install-banner')?.classList.add('show');
+    }, 3000);
+  }
+}
+
+// ── Toast ──────────────────────────────────────────────────
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ── Support wiring ────────────────────────────────�
+  // Support wiring done above
+</script>
+
+
+</body>
+</html>
